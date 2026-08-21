@@ -3,7 +3,7 @@ import { SiteFooter } from '@/app/components/SiteFooter';
 import { SiteHeader } from '@/app/components/SiteHeader';
 import './globals.css';
 
-const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://sks-carbon-progress.stevenchenjy.chatgpt.site';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteOrigin),
