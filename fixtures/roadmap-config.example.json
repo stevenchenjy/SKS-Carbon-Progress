@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "id": "synthetic-roadmap-config",
+    "label": "Synthetic roadmap configuration fixture",
+    "synthetic": true,
+    "generatedAt": "2026-08-22T12:00:00-04:00",
+    "publicationStatus": "prototype",
+    "quality": "prototype",
+    "methodologyVersion": "synthetic-roadmap-v1",
+    "verificationReference": null
+  },
+  "areas": [
+    {
+      "id": "synthetic-energy-buildings",
+      "title": "Synthetic Energy & Buildings Example",
+      "summary": "A fictional configuration record used only to validate the roadmap adapter.",
+      "target": null,
+      "progress": {
+        "stage": "Planning",
+        "percent": null,
+        "metricLabel": null,
+        "quality": "prototype"
+      },
+      "exampleActions": ["Review a synthetic measurement boundary"],
+      "futureGoals": ["Replace this fixture with an approved public configuration"],
+      "linkedPublicProjectIds": [],
+      "methodologyNote": "No target or numerical progress is assigned in this synthetic fixture."
+    }
+  ]
+}

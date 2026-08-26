@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "id": "synthetic-inventory-example",
+    "label": "Synthetic inventory validation fixture",
+    "synthetic": true,
+    "updatedAt": "2026-08-22T12:00:00-04:00",
+    "publicationStatus": "prototype",
+    "methodologyVersion": "synthetic-example-v1",
+    "verificationReference": "https://example.invalid/synthetic-verification-evidence",
+    "reportingPeriod": {
+      "start": "2025-07-01",
+      "end": "2026-06-30",
+      "label": "Synthetic 2025–2026 reporting period"
+    }
+  },
+  "overview": {
+    "baselineYear": 2025,
+    "latestReportingYear": 2026,
+    "reductionPercent": null,
+    "emissionsTrend": "Synthetic validation example only",
+    "reportingStatus": "Prototype",
+    "quality": "prototype",
+    "scopeBreakdown": [
+      {
+        "scope": "Scope 1",
+        "source": "Synthetic direct-source activity",
+        "value": 100,
+        "unit": "illustrative index",
+        "quality": "verified",
+        "note": "Synthetic verified-record edge case; not a school result"
+      },
+      {
+        "scope": "Scope 2",
+        "source": "Synthetic purchased-electricity activity",
+        "value": 0,
+        "unit": "illustrative index",
+        "quality": "estimated",
+        "note": "Synthetic estimated genuine-zero edge case"
+      },
+      {
+        "scope": "Scope 3",
+        "source": "Synthetic indirect activity",
+        "value": null,
+        "unit": "illustrative index",
+        "quality": "pending",
+        "note": "Synthetic missing-scope edge case"
+      }
+    ],
+    "totals": null
+  },
+  "history": [
+    {
+      "year": 2025,
+      "value": 100,
+      "unit": "illustrative index",
+      "kind": "inventory",
+      "milestone": "inventory",
+      "note": "Synthetic baseline point",
+      "quality": "prototype"
+    },
+    {
+      "year": 2026,
+      "value": null,
+      "unit": "illustrative index",
+      "kind": "inventory",
+      "milestone": "inventory",
+      "note": "Synthetic unavailable point",
+      "quality": "pending"
+    }
+  ],
+  "methodology": {
+    "reportingBoundary": "Synthetic boundary used only to test the validation workflow.",
+    "baselineDefinition": "Synthetic example; no Storm King School baseline is represented.",
+    "emissionsFactors": "Synthetic example; no calculation factors are applied.",
+    "reportingYear": "Synthetic academic-year convention.",
+    "dataQualityStatus": "prototype",
+    "approach": [
+      "Preserve missing values as null.",
+      "Preserve a genuine numeric zero.",
+      "Reject unknown units and malformed timestamps."
+    ]
+  }
+}

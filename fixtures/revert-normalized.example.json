@@ -1,0 +1,38 @@
+{
+  "snapshot": {
+    "currentPowerKw": 0,
+    "energyTodayKwh": 12.4,
+    "weeklyTrendPercent": null,
+    "lastUpdatedAt": "2026-08-22T10:00:00Z",
+    "quality": "measured",
+    "coverage": {
+      "kind": "selected-devices",
+      "label": "Three synthetic lab devices",
+      "monitoredDeviceCount": 3,
+      "note": "Synthetic normalized fixture representing selected smart plugs only."
+    }
+  },
+  "history24h": [
+    {
+      "timestamp": "2026-08-22T10:00:00Z",
+      "label": "10a",
+      "value": 0,
+      "unit": "kW",
+      "quality": "measured"
+    }
+  ],
+  "history7d": [
+    {
+      "timestamp": "2026-08-22T00:00:00Z",
+      "label": "Sat",
+      "value": null,
+      "unit": "kWh",
+      "quality": "pending"
+    }
+  ],
+  "impact": {
+    "avoidedEnergyKwh": null,
+    "comparisonMethod": "No reviewed avoided-energy method is represented by this synthetic fixture.",
+    "quality": "pending"
+  }
+}

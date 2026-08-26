@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "id": "synthetic-start-example",
+    "label": "Synthetic START public fixture",
+    "synthetic": true,
+    "generatedAt": "2026-08-22T12:00:00-04:00",
+    "publicationStatus": "prototype",
+    "quality": "prototype"
+  },
+  "publicProjects": [
+    {
+      "id": "public-example",
+      "title": "Synthetic Public Example",
+      "category": "Education & Engagement",
+      "status": "Learning",
+      "summary": "Synthetic public-safe summary used only to validate the snapshot boundary.",
+      "milestone": {
+        "label": "Example milestone",
+        "stage": "Learning",
+        "target": "Synthetic term"
+      },
+      "impact": null,
+      "impactQuality": "prototype",
+      "verificationReference": null,
+      "nextPublicStep": "Review a synthetic next step",
+      "updatedAt": "2026-08-22",
+      "quality": "prototype"
+    }
+  ]
+}
