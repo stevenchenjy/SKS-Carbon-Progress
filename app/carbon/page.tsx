@@ -2,18 +2,21 @@ import type { Metadata } from 'next';
 import { DataBarChart } from '@/app/components/DataBarChart';
 import { CarbonScopeGrid } from '@/app/components/CarbonScopeGrid';
 import { CarbonTimeline } from '@/app/components/CarbonTimeline';
+import { CarbonPlanProgress } from '@/app/components/CarbonPlanProgress';
 import { DataQualityBadge } from '@/app/components/DataQualityBadge';
 import { PrototypeNotice } from '@/app/components/PrototypeNotice';
 import { getCarbonProvider } from '@/lib/carbon/server';
 import { unavailableMetadata } from '@/lib/provider-metadata';
 import type { CarbonMethodology, CarbonOverview } from '@/lib/carbon/types';
 import { dataQualityDescription } from '@/lib/claim-safety';
+import { getSiteContentProvider } from '@/lib/site-content/server';
+import type { CarbonNeutralityPlanContent } from '@/lib/site-content/types';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Carbon methodology | SKS Carbon Progress',
-  description: 'Explore the prototype reporting boundary, carbon inventory structure, timeline, and future data-quality approach.',
+  title: 'Carbon Neutrality Framework | SKS Sustainability Progress',
+  description: 'Explore the proposed carbon-neutrality framework, progress requirements, inventory boundary, and future data-quality approach.',
 };
 
 const qualityLegend = [
@@ -22,6 +25,28 @@ const qualityLegend = [
   { quality: 'verified' as const, text: dataQualityDescription('verified') },
   { quality: 'prototype' as const, text: dataQualityDescription('prototype') },
 ];
+
+const unavailablePlan: CarbonNeutralityPlanContent = {
+  definition: 'The selected carbon-plan source could not be loaded.',
+  goal: null,
+  targetYear: null,
+  baselineYear: null,
+  latestReportingYear: null,
+  inventoryBoundary: null,
+  baselineGrossEmissionsTco2e: null,
+  latestGrossEmissionsTco2e: null,
+  targetGrossEmissionsTco2e: null,
+  progressPercent: null,
+  progressMetric: null,
+  progressMethod: null,
+  retiredOffsetsTco2e: null,
+  offsetsMethod: null,
+  offsetsEvidenceReference: null,
+  status: 'Framework',
+  updatedAt: null,
+  quality: 'pending',
+  framework: [],
+};
 
 async function loadCarbonPageData() {
   try {
@@ -61,24 +86,58 @@ async function loadCarbonPageData() {
   }
 }
 
+async function loadCarbonPlanData() {
+  try {
+    const provider = getSiteContentProvider();
+    const [plan, metadata] = await Promise.all([provider.getCarbonPlan(), provider.getMetadata()]);
+    return { plan, metadata };
+  } catch {
+    return {
+      plan: unavailablePlan,
+      metadata: unavailableMetadata('Carbon plan', 'The selected carbon-plan source could not be loaded. No goal, percentage, or offset quantity has been inferred.'),
+    };
+  }
+}
+
 export default async function CarbonPage() {
-  const { overview, history, methodology, providerMetadata } = await loadCarbonPageData();
+  const [carbonData, planData] = await Promise.all([loadCarbonPageData(), loadCarbonPlanData()]);
+  const { overview, history, methodology, providerMetadata } = carbonData;
+  const { plan, metadata: planMetadata } = planData;
   const historyUnit = history.find((point) => point.unit)?.unit ?? 'unit not supplied';
 
   return (
     <main id="main-content">
       <section className="page-hero carbon-hero">
-        <p className="eyebrow"><span /> Carbon methodology</p>
-        <h1 aria-label="Show the boundary. Name the uncertainty.">Show the boundary.<br /><em>Name the uncertainty.</em></h1>
-        <p>A credible public inventory explains what is counted, how it is calculated, and which findings have actually been reviewed.</p>
-        <div className="page-index"><span>01</span><span>Inventory</span><span>02</span><span>Timeline</span><span>03</span><span>How we measure</span></div>
+        <p className="eyebrow"><span /> 03 / Carbon Neutrality Framework</p>
+        <h1 aria-label="Reduce first. Account for the rest.">Reduce first.<br /><em>Account for the rest.</em></h1>
+        <p>{plan.definition}</p>
+        <div className="page-index"><span>01</span><span>Plan & progress</span><span>02</span><span>Inventory</span><span>03</span><span>Method</span></div>
       </section>
 
-      <PrototypeNotice metadata={providerMetadata} />
+      <PrototypeNotice metadata={planMetadata} />
+
+      <section className="section-pad carbon-plan-section" aria-labelledby="carbon-plan-heading">
+        <div className="section-intro split-intro">
+          <div><p className="eyebrow"><span /> 01 / Plan and progress</p><h2 id="carbon-plan-heading">A framework now.<br /><em>A goal after approval.</em></h2></div>
+          <p>{plan.goal ?? 'No reviewed public Storm King carbon-neutrality goal, baseline year, target year, or inventory boundary is currently connected. Those decisions must come before a progress percentage.'}</p>
+        </div>
+        <CarbonPlanProgress plan={plan} />
+        <div className="carbon-framework-grid" aria-label="Carbon neutrality framework stages">
+          {plan.framework.map((stage, index) => (
+            <article key={stage.id}>
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              <h3>{stage.title}</h3>
+              <p>{stage.description}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <PrototypeNotice compact metadata={providerMetadata} />
 
       <section className="section-pad inventory-section" aria-labelledby="inventory-heading">
         <div className="section-intro split-intro">
-          <div><p className="eyebrow"><span /> 01 / Carbon inventory</p><h2 id="inventory-heading">Three scopes,<br /><em>one clear boundary.</em></h2></div>
+          <div><p className="eyebrow"><span /> 02 / Carbon inventory</p><h2 id="inventory-heading">Three scopes,<br /><em>one clear boundary.</em></h2></div>
           <p>{providerMetadata.synthetic ? 'No scope total has been loaded. These cards demonstrate how future activity data, status, and source notes would be separated.' : 'Scope cards separate inventory values, units, data-quality status, and source notes.'}</p>
         </div>
         <CarbonScopeGrid scopes={overview.scopeBreakdown} metadata={providerMetadata} />
@@ -114,7 +173,7 @@ export default async function CarbonPage() {
       </section>
 
       <section className="section-pad timeline-section" aria-labelledby="timeline-heading">
-        <div className="section-intro"><p className="eyebrow"><span /> 02 / Carbon timeline</p><h2 id="timeline-heading">From inventory to <em>verification.</em></h2></div>
+        <div className="section-intro"><p className="eyebrow"><span /> Inventory timeline</p><h2 id="timeline-heading">From inventory to <em>verification.</em></h2></div>
         <CarbonTimeline history={history} />
       </section>
 

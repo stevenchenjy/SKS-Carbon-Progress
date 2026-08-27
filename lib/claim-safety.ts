@@ -113,6 +113,7 @@ export function sourceTypeLabel(sourceType: ProviderSourceType): string {
     inventory: 'Reviewed inventory',
     'vendor-feed': 'Vendor feed',
     'public-snapshot': 'Sanitized public snapshot',
+    'spreadsheet-snapshot': 'Governed spreadsheet snapshot',
     'configured-roadmap': 'Configured roadmap',
     unknown: 'Unknown source type',
   };

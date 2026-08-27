@@ -39,6 +39,8 @@ afterEach(() => {
   delete process.env.START_PUBLIC_SNAPSHOT_URL;
   delete process.env.ROADMAP_PROVIDER;
   delete process.env.ROADMAP_DATA_URL;
+  delete process.env.SITE_CONTENT_PROVIDER;
+  delete process.env.SITE_CONTENT_URL;
 });
 
 describe('external data validation boundaries', () => {
@@ -139,6 +141,33 @@ describe('external data validation boundaries', () => {
     const mislabeledSyntheticSource = structuredClone(startFixture) as unknown as { source: Record<string, unknown> };
     mislabeledSyntheticSource.source.quality = 'verified';
     expect(() => validateStartPublicSnapshot(mislabeledSyntheticSource)).toThrow(/synthetic snapshot/i);
+  });
+
+  it('requires periods and evidence for published project metrics and rejects future periods', () => {
+    const real = structuredClone(startFixture) as unknown as {
+      source: Record<string, unknown>;
+      publicProjects: Array<{ quality: string; impactQuality: string; metrics: Array<Record<string, unknown>> }>;
+    };
+    real.source.synthetic = false;
+    real.source.publicationStatus = 'reported';
+    real.source.quality = 'pending';
+    real.publicProjects[0].quality = 'pending';
+    real.publicProjects[0].impactQuality = 'pending';
+    const metric = real.publicProjects[0].metrics[0];
+    metric.value = 1;
+    metric.quality = 'measured';
+    expect(() => validateStartPublicSnapshot(real)).toThrow(/periodStart and periodEnd are required/i);
+
+    metric.periodStart = '2026-08-01';
+    metric.periodEnd = '2026-08-23';
+    expect(() => validateStartPublicSnapshot(real)).toThrow(/periodEnd must not be after source.generatedAt/i);
+
+    metric.periodEnd = '2026-08-20';
+    metric.metricType = 'estimated-emissions-avoided';
+    metric.methodologyNote = 'Reviewed test model.';
+    metric.evidenceReference = null;
+    metric.equivalencies = [{ label: 'test equivalent', value: 1, unit: 'units', methodology: 'Test factor.', sourceReference: '' }];
+    expect(() => validateStartPublicSnapshot(real)).toThrow(/evidenceReference|sourceReference/i);
   });
 });
 
@@ -250,7 +279,7 @@ describe('Revert readiness and energy semantics', () => {
 describe('provider configuration and safe failures', () => {
   it('defaults every domain to mock and reports readiness without secret values', () => {
     const env = testEnv();
-    expect(getProviderSelections(env)).toEqual({ carbon: 'mock', energy: 'mock', projects: 'mock', roadmap: 'mock' });
+    expect(getProviderSelections(env)).toEqual({ carbon: 'mock', energy: 'mock', projects: 'mock', roadmap: 'mock', siteContent: 'mock' });
     expect(getProviderDiagnostics(env).every((item) => item.ready)).toBe(true);
   });
 
@@ -260,6 +289,8 @@ describe('provider configuration and safe failures', () => {
     expect(diagnostics.find((item) => item.domain === 'energy')).toMatchObject({ ready: false, missing: ['REVERT_API_URL', 'REVERT_API_KEY'] });
     expect(getProviderDiagnostics(testEnv({ ROADMAP_PROVIDER: 'config' })).find((item) => item.domain === 'roadmap')).toMatchObject({ ready: false, missing: ['ROADMAP_DATA_URL'] });
     expect(getProviderDiagnostics(testEnv({ CARBON_PROVIDER: 'inventory', CARBON_DATA_URL: 'file:///private.json' })).find((item) => item.domain === 'carbon')).toMatchObject({ ready: false, invalid: ['CARBON_DATA_URL'] });
+    expect(getProviderDiagnostics(testEnv({ SITE_CONTENT_PROVIDER: 'snapshot' })).find((item) => item.domain === 'site-content')).toMatchObject({ ready: false, missing: ['SITE_CONTENT_URL'] });
+    expect(getProviderDiagnostics(testEnv({ SITE_CONTENT_PROVIDER: 'snapshot', SITE_CONTENT_URL: 'file:///private.json' })).find((item) => item.domain === 'site-content')).toMatchObject({ ready: false, invalid: ['SITE_CONTENT_URL'] });
   });
 
   it('returns safe API errors without leaking internal details', async () => {

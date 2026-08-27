@@ -16,8 +16,18 @@ export class StartSnapshotProvider implements ProjectProvider {
 
   async getMetadata(): Promise<ProviderMetadata> {
     const snapshot = await this.load();
-    const hasPendingResults = snapshot.publicProjects.some((project) => project.impact === null);
-    const verifiedProject = snapshot.publicProjects.find((project) => project.impactQuality === 'verified' || project.quality === 'verified');
+    const hasPendingResults = snapshot.publicProjects.some((project) => (
+      project.metrics.length === 0
+      || project.metrics.some((metric) => metric.value === null)
+    ));
+    const verifiedProject = snapshot.publicProjects.find((project) => (
+      project.impactQuality === 'verified'
+      || project.quality === 'verified'
+      || project.metrics.some((metric) => metric.quality === 'verified')
+    ));
+    const verificationReference = verifiedProject?.verificationReference
+      ?? verifiedProject?.metrics.find((metric) => metric.quality === 'verified')?.evidenceReference
+      ?? null;
     return {
       synthetic: snapshot.source.synthetic,
       status: snapshot.source.quality,
@@ -39,7 +49,7 @@ export class StartSnapshotProvider implements ProjectProvider {
       sourceType: 'public-snapshot',
       verification: {
         state: verifiedProject ? 'verified' : 'not-verified',
-        reference: verifiedProject?.verificationReference ?? null,
+        reference: verificationReference,
         note: 'Result-level verification references remain attached to the individual public project records.',
       },
       methodologyNote: 'Version 1 sanitized START public snapshot contract.',
@@ -58,6 +68,7 @@ export class StartSnapshotProvider implements ProjectProvider {
       milestone: structuredClone(project.milestone),
       impact: project.impact,
       impactQuality: project.impactQuality,
+      metrics: project.metrics.map((metric) => structuredClone(metric)),
       verificationReference: project.verificationReference,
       nextPublicStep: project.nextPublicStep,
       updatedAt: project.updatedAt,

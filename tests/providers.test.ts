@@ -43,7 +43,7 @@ describe('mock provider contracts', () => {
 
     expect(projects.length).toBeGreaterThan(0);
     expect(metadata.synthetic).toBe(true);
-    expect(projects.every((project) => project.quality === 'prototype')).toBe(true);
+    expect(projects.every((project) => ['prototype', 'pending'].includes(project.quality))).toBe(true);
     for (const forbidden of ['internalnotes', 'facultyemail', 'studentidentity', 'privateconcern', 'approvaldiscussion']) {
       expect(serialized).not.toContain(forbidden);
     }

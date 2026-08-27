@@ -40,6 +40,7 @@ export type ProviderSourceType =
   | 'inventory'
   | 'vendor-feed'
   | 'public-snapshot'
+  | 'spreadsheet-snapshot'
   | 'configured-roadmap'
   | 'unknown';
 

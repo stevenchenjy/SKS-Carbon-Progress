@@ -4,6 +4,7 @@ export type CarbonProviderSelection = 'mock' | 'inventory';
 export type EnergyProviderSelection = 'mock' | 'revert';
 export type ProjectProviderSelection = 'mock' | 'start-snapshot';
 export type RoadmapProviderSelection = 'mock' | 'config';
+export type SiteContentProviderSelection = 'mock' | 'snapshot';
 
 function selector<T extends string>(name: string, allowed: readonly T[], fallback: T, env: NodeJS.ProcessEnv): T {
   const value = env[name]?.trim() || fallback;
@@ -17,6 +18,7 @@ export const getCarbonProviderSelection = (env: NodeJS.ProcessEnv = process.env)
 export const getEnergyProviderSelection = (env: NodeJS.ProcessEnv = process.env) => selector('ENERGY_PROVIDER', ['mock', 'revert'] as const, 'mock', env);
 export const getProjectProviderSelection = (env: NodeJS.ProcessEnv = process.env) => selector('PROJECT_PROVIDER', ['mock', 'start-snapshot'] as const, 'mock', env);
 export const getRoadmapProviderSelection = (env: NodeJS.ProcessEnv = process.env) => selector('ROADMAP_PROVIDER', ['mock', 'config'] as const, 'mock', env);
+export const getSiteContentProviderSelection = (env: NodeJS.ProcessEnv = process.env) => selector('SITE_CONTENT_PROVIDER', ['mock', 'snapshot'] as const, 'mock', env);
 
 export function getProviderSelections(env: NodeJS.ProcessEnv = process.env) {
   return {
@@ -24,6 +26,7 @@ export function getProviderSelections(env: NodeJS.ProcessEnv = process.env) {
     energy: getEnergyProviderSelection(env),
     projects: getProjectProviderSelection(env),
     roadmap: getRoadmapProviderSelection(env),
+    siteContent: getSiteContentProviderSelection(env),
   };
 }
 
@@ -56,7 +59,7 @@ export function optionalPositiveInteger(name: string, fallback: number, env: Nod
 }
 
 export interface ProviderDiagnostic {
-  domain: 'carbon' | 'energy' | 'projects' | 'roadmap';
+  domain: 'carbon' | 'energy' | 'projects' | 'roadmap' | 'site-content';
   selected: string;
   ready: boolean;
   missing: string[];
@@ -89,6 +92,7 @@ export function getProviderDiagnostics(env: NodeJS.ProcessEnv = process.env): Pr
   const energyMissing = selections.energy === 'revert' ? missing(['REVERT_API_URL', 'REVERT_API_KEY']) : [];
   const projectMissing = selections.projects === 'start-snapshot' ? missing(['START_PUBLIC_SNAPSHOT_URL']) : [];
   const roadmapMissing = selections.roadmap === 'config' ? missing(['ROADMAP_DATA_URL']) : [];
+  const siteContentMissing = selections.siteContent === 'snapshot' ? missing(['SITE_CONTENT_URL']) : [];
   const carbonInvalid = selections.carbon === 'inventory' ? invalidUrls(['CARBON_DATA_URL']) : [];
   const energyInvalid = selections.energy === 'revert'
     ? [
@@ -101,11 +105,13 @@ export function getProviderDiagnostics(env: NodeJS.ProcessEnv = process.env): Pr
     : [];
   const projectInvalid = selections.projects === 'start-snapshot' ? invalidUrls(['START_PUBLIC_SNAPSHOT_URL']) : [];
   const roadmapInvalid = selections.roadmap === 'config' ? invalidUrls(['ROADMAP_DATA_URL']) : [];
+  const siteContentInvalid = selections.siteContent === 'snapshot' ? invalidUrls(['SITE_CONTENT_URL']) : [];
   const diagnostics: ProviderDiagnostic[] = [
     { domain: 'carbon', selected: selections.carbon, ready: carbonMissing.length + carbonInvalid.length === 0, missing: carbonMissing, invalid: carbonInvalid, note: selections.carbon === 'mock' ? 'Synthetic provider active.' : 'Normalized inventory source selected.' },
     { domain: 'energy', selected: selections.energy, ready: false, missing: energyMissing, invalid: energyInvalid, note: selections.energy === 'mock' ? 'Synthetic provider active.' : 'Official Revert transport contract is still required.' },
     { domain: 'projects', selected: selections.projects, ready: projectMissing.length + projectInvalid.length === 0, missing: projectMissing, invalid: projectInvalid, note: selections.projects === 'mock' ? 'Synthetic provider active.' : 'Sanitized START snapshot selected.' },
     { domain: 'roadmap', selected: selections.roadmap, ready: roadmapMissing.length + roadmapInvalid.length === 0, missing: roadmapMissing, invalid: roadmapInvalid, note: selections.roadmap === 'mock' ? 'Synthetic roadmap provider active.' : 'Validated roadmap configuration selected.' },
+    { domain: 'site-content', selected: selections.siteContent, ready: siteContentMissing.length + siteContentInvalid.length === 0, missing: siteContentMissing, invalid: siteContentInvalid, note: selections.siteContent === 'mock' ? 'Reviewed narrative with safe placeholders active.' : 'Validated spreadsheet snapshot selected.' },
   ];
   return diagnostics.map((item) => item.domain === 'energy' && selections.energy === 'mock' ? { ...item, ready: true } : item);
 }

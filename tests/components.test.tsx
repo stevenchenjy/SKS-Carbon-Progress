@@ -3,11 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { DataBarChart } from '@/app/components/DataBarChart';
 import { CarbonScopeGrid } from '@/app/components/CarbonScopeGrid';
 import { CarbonTimeline } from '@/app/components/CarbonTimeline';
+import { CarbonPlanProgress } from '@/app/components/CarbonPlanProgress';
 import { DataQualityBadge } from '@/app/components/DataQualityBadge';
 import { ProjectGrid } from '@/app/components/ProjectGrid';
 import { PrototypeNotice } from '@/app/components/PrototypeNotice';
 import { RoadmapGrid } from '@/app/components/RoadmapGrid';
 import type { ProviderMetadata } from '@/lib/provider-metadata';
+import type { CarbonNeutralityPlanContent } from '@/lib/site-content/types';
 import { canClaimVerified, disclosureHeading, publicClaimVocabulary, verificationLabel } from '@/lib/claim-safety';
 
 const prototypeMetadata: ProviderMetadata = {
@@ -21,6 +23,28 @@ const prototypeMetadata: ProviderMetadata = {
   freshness: { state: 'not-applicable', observedAt: '2026-08-22', staleAfterMinutes: null },
   coverage: { kind: 'unknown', label: 'Test coverage', note: 'Test coverage note.', monitoredDeviceCount: null },
   reportingPeriod: null,
+};
+
+const pendingPlan: CarbonNeutralityPlanContent = {
+  definition: 'Test framework.',
+  goal: null,
+  targetYear: null,
+  baselineYear: null,
+  latestReportingYear: null,
+  inventoryBoundary: null,
+  baselineGrossEmissionsTco2e: null,
+  latestGrossEmissionsTco2e: null,
+  targetGrossEmissionsTco2e: null,
+  progressPercent: null,
+  progressMetric: null,
+  progressMethod: null,
+  retiredOffsetsTco2e: null,
+  offsetsMethod: null,
+  offsetsEvidenceReference: null,
+  status: 'Framework',
+  updatedAt: null,
+  quality: 'pending',
+  framework: [],
 };
 
 describe('public data components', () => {
@@ -63,6 +87,7 @@ describe('public data components', () => {
           milestone: { label: 'Reviewed milestone', stage: 'Active', target: 'Test period' },
           impact: 'Test result',
           impactQuality: 'verified',
+          metrics: [],
           verificationReference: 'https://example.invalid/project-evidence',
           nextPublicStep: null,
           updatedAt: '2026-08-22',
@@ -71,6 +96,74 @@ describe('public data components', () => {
       />,
     );
     expect(screen.getByRole('link', { name: /view verification evidence/i })).toHaveAttribute('href', 'https://example.invalid/project-evidence');
+  });
+
+  it('keeps a missing carbon-plan percentage numeric-free and renders reviewed progress when supplied', () => {
+    const { rerender } = render(<CarbonPlanProgress plan={pendingPlan} />);
+    expect(screen.getByText('Not yet calculated')).toBeInTheDocument();
+    expect(screen.getByRole('status')).not.toHaveAttribute('aria-valuenow');
+
+    rerender(<CarbonPlanProgress plan={{
+      ...pendingPlan,
+      goal: 'Test goal',
+      baselineYear: 2024,
+      latestReportingYear: 2026,
+      targetYear: 2030,
+      baselineGrossEmissionsTco2e: 100,
+      latestGrossEmissionsTco2e: 70,
+      targetGrossEmissionsTco2e: 40,
+      inventoryBoundary: 'Test boundary',
+      progressPercent: 50,
+      progressMetric: 'Target attainment',
+      progressMethod: 'Documented gross-emissions method.',
+      quality: 'measured',
+    }} />);
+    expect(screen.getByText('50%')).toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50');
+    expect(screen.getByText('Documented gross-emissions method.')).toBeInTheDocument();
+  });
+
+  it('distinguishes project metric zero from missing and shows equivalency method evidence', () => {
+    render(<ProjectGrid
+      metadata={{ ...prototypeMetadata, synthetic: false, publicationStatus: 'reported', status: 'measured' }}
+      projects={[{
+        id: 'metric-test',
+        title: 'Metric test project',
+        category: 'Waste & Circularity',
+        status: 'Active',
+        summary: 'Test summary.',
+        milestone: { label: 'Test milestone', stage: 'Active', target: '2026' },
+        impact: null,
+        impactQuality: 'pending',
+        metrics: [
+          {
+            id: 'zero-count', label: 'Containers returned', metricType: 'activity-count', value: 0, unit: 'containers',
+            periodStart: '2026-08-01', periodEnd: '2026-08-20', quality: 'measured', sourceLabel: 'Vendor report',
+            methodologyNote: 'Vendor-reported count.', evidenceReference: 'https://example.invalid/report', equivalencies: [],
+          },
+          {
+            id: 'missing-impact', label: 'Modeled benefit', metricType: 'estimated-emissions-avoided', value: null, unit: 'tCO2e',
+            periodStart: null, periodEnd: null, quality: 'pending', sourceLabel: 'Awaiting model', methodologyNote: null,
+            evidenceReference: null,
+            equivalencies: [],
+          },
+          {
+            id: 'modeled-impact', label: 'Reviewed modeled benefit', metricType: 'estimated-emissions-avoided', value: 1, unit: 'tCO2e',
+            periodStart: '2026-08-01', periodEnd: '2026-08-20', quality: 'estimated', sourceLabel: 'EPA WARM model run',
+            methodologyNote: 'Documented baseline comparison.', evidenceReference: 'https://example.invalid/model',
+            equivalencies: [{ label: 'passenger vehicle miles', value: 2544, unit: 'miles', methodology: 'EPA factor version used in test.', sourceReference: 'https://example.invalid/factor' }],
+          },
+        ],
+        verificationReference: null,
+        nextPublicStep: null,
+        updatedAt: '2026-08-20',
+        quality: 'measured',
+      }]}
+    />);
+    expect(screen.getByText('0 containers')).toBeInTheDocument();
+    expect(screen.getByText('Awaiting reviewed data')).toBeInTheDocument();
+    expect(screen.getByText(/EPA factor version used in test/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /factor source/i })).toHaveAttribute('href', 'https://example.invalid/factor');
   });
 
   it('renders empty states for roadmap, carbon inventory, and carbon timeline sections', () => {

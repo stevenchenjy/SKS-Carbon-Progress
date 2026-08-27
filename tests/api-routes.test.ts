@@ -6,13 +6,16 @@ import { GET as getEnergyLive, energyLiveResponse } from '@/app/api/energy/live/
 import { GET as getEnergyHistory, energyHistoryResponse } from '@/app/api/energy/history/route';
 import { GET as getProjects, projectsResponse } from '@/app/api/projects/route';
 import { GET as getRoadmap, roadmapResponse } from '@/app/api/roadmap/route';
+import { GET as getSiteContent, siteContentResponse } from '@/app/api/site-content/route';
 import type { CarbonProvider } from '@/lib/carbon/provider';
 import type { EnergyProvider } from '@/lib/energy/provider';
 import type { ProjectProvider } from '@/lib/projects/provider';
 import type { RoadmapProvider } from '@/lib/roadmap/provider';
+import type { SiteContentProvider } from '@/lib/site-content/provider';
 import type { ProviderMetadata } from '@/lib/provider-metadata';
 import { ProviderError } from '@/lib/providers/errors';
 import { CarbonInventoryProvider } from '@/lib/carbon/providers/carbonInventoryProvider';
+import { SnapshotSiteContentProvider } from '@/lib/site-content/providers/snapshotSiteContentProvider';
 
 const reportedMetadata: ProviderMetadata = {
   synthetic: false,
@@ -78,6 +81,18 @@ const emptyRoadmapProvider: RoadmapProvider = {
   getAreas: async () => [],
 };
 
+const emptySiteContentProvider: SiteContentProvider = {
+  getMetadata: async () => structuredClone(reportedMetadata),
+  getOverview: async () => ({ sustainabilityDefinition: 'Test definition', placeContext: 'Test place', valueAlignment: [], sourceReferences: [] }),
+  getStart: async () => ({ introduction: 'Test START', adoptionRationale: null, adoptionStatus: 'working-purpose', owner: null, adoptionDate: null, workflow: [], privacyBoundary: 'Test boundary', snapshotCadence: null }),
+  getCarbonPlan: async () => ({
+    definition: 'Test plan', goal: null, targetYear: null, baselineYear: null, latestReportingYear: null, inventoryBoundary: null,
+    baselineGrossEmissionsTco2e: null, latestGrossEmissionsTco2e: null, targetGrossEmissionsTco2e: null,
+    progressPercent: null, progressMetric: null, progressMethod: null, retiredOffsetsTco2e: null, offsetsMethod: null,
+    offsetsEvidenceReference: null, status: 'Framework', updatedAt: null, quality: 'pending', framework: [],
+  }),
+};
+
 describe('prototype API routes', () => {
   it('labels every successful response as synthetic prototype data', async () => {
     const responses = await Promise.all([
@@ -87,6 +102,7 @@ describe('prototype API routes', () => {
       getEnergyHistory(new Request('https://example.test/api/energy/history?range=24h')),
       getProjects(),
       getRoadmap(),
+      getSiteContent(),
     ]);
 
     for (const response of responses) {
@@ -104,6 +120,7 @@ describe('prototype API routes', () => {
     const energyHistory = await energyHistoryResponse(new Request('https://example.test/api/energy/history?range=24h'), () => staleEnergyProvider);
     const projects = await projectsResponse(() => emptyProjectProvider);
     const roadmap = await roadmapResponse(() => emptyRoadmapProvider);
+    const siteContent = await siteContentResponse(() => emptySiteContentProvider);
 
     expect((await carbonOverview.json() as { data: { baselineYear: null } }).data.baselineYear).toBeNull();
     expect((await carbonHistory.json() as { data: unknown[] }).data).toEqual([]);
@@ -114,6 +131,9 @@ describe('prototype API routes', () => {
     expect((await energyHistory.json() as { data: unknown[]; meta: ProviderMetadata }).data).toEqual([]);
     expect((await projects.json() as { data: unknown[] }).data).toEqual([]);
     expect((await roadmap.json() as { data: unknown[] }).data).toEqual([]);
+    const siteContentBody = await siteContent.json() as { data: { start: { owner: null }; carbonPlan: { progressPercent: null } } };
+    expect(siteContentBody.data.start.owner).toBeNull();
+    expect(siteContentBody.data.carbonPlan.progressPercent).toBeNull();
     expect(energyLive.headers.get('Cache-Control')).toBe('no-store');
   });
 
@@ -128,6 +148,7 @@ describe('prototype API routes', () => {
       energyHistoryResponse(new Request('https://example.test/api/energy/history?range=7d'), unavailable),
       projectsResponse(unavailable),
       roadmapResponse(unavailable),
+      siteContentResponse(unavailable),
     ]);
     for (const response of responses) {
       expect(response.status).toBe(503);
@@ -155,6 +176,13 @@ describe('prototype API routes', () => {
         message: 'The selected data source returned data that could not be safely used.',
       },
     });
+  });
+
+  it('maps malformed site-content snapshots to the same safe 502 contract', async () => {
+    const malformedProvider = new SnapshotSiteContentProvider({ load: async () => ({ schemaVersion: 1, privatePayload: 'must not leak' }) });
+    const response = await siteContentResponse(() => malformedProvider);
+    expect(response.status).toBe(502);
+    expect(JSON.stringify(await response.json())).not.toContain('privatePayload');
   });
 
   it('returns seven days when requested and rejects unsupported ranges', async () => {

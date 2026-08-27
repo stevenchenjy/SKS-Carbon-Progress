@@ -4,8 +4,9 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 const links = [
-  { href: '/carbon', label: 'Carbon' },
-  { href: '/energy', label: 'Energy' },
+  { href: '/', label: 'Overview' },
+  { href: '/start', label: 'START' },
+  { href: '/carbon', label: 'Carbon Neutrality Plan' },
   { href: '/projects', label: 'Projects' },
 ];
 
@@ -15,10 +16,10 @@ export function SiteHeader() {
 
   return (
     <header className="site-header">
-      <Link className="brand" href="/" aria-label="SKS Carbon Progress home">
+      <Link className="brand" href="/" aria-label="SKS Sustainability Progress home">
         <span className="brand-mark" aria-hidden="true">SKS</span>
         <span>
-          <strong>Carbon Progress</strong>
+          <strong>Sustainability Progress</strong>
           <small>Storm King School</small>
         </span>
       </Link>
@@ -38,7 +39,6 @@ export function SiteHeader() {
         </button>
         {isMenuOpen ? (
           <nav aria-label="Mobile navigation" id="mobile-navigation">
-            <Link href="/" onClick={closeMobileMenu}>Home</Link>
             {links.map((link) => <Link href={link.href} key={link.href} onClick={closeMobileMenu}>{link.label}</Link>)}
           </nav>
         ) : null}

@@ -1,6 +1,6 @@
 # Claims and data quality
 
-This is the practical wording policy for SKS Carbon Progress. It keeps a target, an observation, a publication decision, source availability, and independent assurance from being collapsed into one badge. The current site contains synthetic prototype content only; none of these definitions turns a fixture into a Storm King School claim.
+This is the practical wording policy for SKS Sustainability Progress. It keeps a target, an observation, a publication decision, source availability, and independent assurance from being collapsed into one badge. The current site uses public-source narrative plus clearly labeled placeholders; none of these definitions turns a fixture into a Storm King School result.
 
 ## Public terms
 
@@ -31,14 +31,19 @@ Before publication, a reviewer should be able to answer:
 7. What methodology and assumptions produce the result?
 8. If the word “verified” is used, where is the public evidence?
 
-The reusable `ProviderMetadata` fields and the source-context notice expose these dimensions without pretending that one aggregate score describes an entire page. A page combining carbon, energy, and roadmap content keeps each source's metadata separate.
+The reusable `ProviderMetadata` fields and the source-context notice expose these dimensions without pretending that one aggregate score describes an entire page. A page combining a carbon plan and inventory keeps each source’s metadata separate.
 
 ## Restricted claims
 
 Do not present “carbon neutral,” “net zero,” a reduction percentage, “verified,” or avoided-emissions language as a factual school claim unless approved source data directly supports it.
 
-- A reduction percentage must be explicitly supplied with an approved baseline, reporting boundary, period, and method. The application does not calculate it.
+- Carbon-plan progress requires an approved goal, baseline/target/current comparable gross values, reporting boundary, years, update date, metric label, and method. The snapshot validator checks the supplied percentage against the gross-emissions target-attainment formula. It is labeled “Emissions-reduction progress,” never “percent carbon neutral.”
 - Gross emissions, offsets, and net emissions must be explicit source fields. Offsets or net emissions require a supplied calculation method; the application does not subtract or infer them.
+- Retired credits are a separate ledger with method and public retirement evidence. They are not included in the progress-bar numerator.
+- CLYNK containers/proceeds, compost mass, modeled project benefits, START scores, and other project outcomes never reduce the gross inventory automatically.
+- Composting is not a carbon offset. A public modeled benefit requires weighed accepted material, a documented disposal baseline, a named EPA WARM version, and model-run evidence.
+- CLYNK container counts come from a dated account report; they are never estimated from bag counts or proceeds.
+- An equivalency is approximate context derived from one reviewed emissions value and one versioned public factor. It is not additional impact.
 - Missing scope or energy values remain `null`; they are never converted to zero.
 - A real zero remains numeric zero and must not be displayed as missing.
 - Avoided energy is not avoided carbon. A carbon conversion would require an approved factor, boundary, period, and method that this application does not currently contain.

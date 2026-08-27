@@ -14,6 +14,19 @@ npm run providers:status
 
 The command prints selected provider names, readiness, and missing environment-variable names. It never prints values, URLs, keys, payloads, or other secrets.
 
+## Governed Google Sheet
+
+The recommended first editorial integration is the native **SKS Sustainability Data Workbook** with the whitelist adapter in `integrations/google-sheets/Code.gs`. The adapter exposes two datasets:
+
+- `SITE_CONTENT_PROVIDER=snapshot` with `SITE_CONTENT_URL=...&dataset=site-content`
+- `PROJECT_PROVIDER=start-snapshot` with `START_PUBLIC_SNAPSHOT_URL=...&dataset=projects`
+
+The site-content snapshot covers Overview, START, and Carbon Neutrality Plan fields. The project snapshot covers public project cards and structured metrics. The script includes only rows marked `published`, requires reviewed evidence for projects/metrics, excludes private file references and editor notes, preserves blank versus zero, and rejects any project metric marked for inclusion in carbon progress.
+
+Keep both selectors on `mock` until the Apps Script web app has been deployed, the required START fields have been approved, and both endpoint responses pass the local validators. Full setup and governance instructions are in `SPREADSHEET_UPDATE_GUIDE.md`.
+
+Supabase is a later alternative for multi-role approvals, structured audit history, attachments, or multiple consuming applications. It should emit the same versioned JSON contracts through reviewed public views/server routes, use Row Level Security for every exposed table, and keep service-role credentials server-only.
+
 ## Carbon inventory
 
 ### Current boundary
@@ -107,12 +120,13 @@ The accepted contract contains only:
 - approved category and public status;
 - public summary;
 - public milestone/stage/target;
+- structured public metrics with nullable value, unit, period, quality, source, method, evidence, and sourced equivalencies;
 - nullable reported result and its quality;
 - public verification reference when a result or update is verified;
 - nullable next public step;
 - public update date and quality.
 
-Unknown keys are rejected. The provider then maps each allowed output field individually. This is defense in depth: internal notes, identities, emails, blockers, private links, committee notes, faculty communications, concerns, and approval discussions cannot be serialized by spreading an upstream record.
+Unknown keys are rejected. A numeric metric requires both period dates; estimated emissions require a method; retired credits require public retirement evidence; equivalencies require a documented HTTP(S) factor source. The provider then maps each allowed output field individually. This is defense in depth: internal notes, identities, emails, blockers, private links, committee notes, faculty communications, concerns, and approval discussions cannot be serialized by spreading an upstream record.
 
 Before activation, the school must approve the snapshot producer, schema versioning/correction policy, public result review, verification evidence, and ownership of each project update.
 

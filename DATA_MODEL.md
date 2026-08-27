@@ -16,11 +16,31 @@ Every domain provider implements `getMetadata()` and returns `ProviderMetadata`.
 - `coverage` — a typed coverage kind, public label/note, and optional monitored-device count
 - `reportingPeriod` — explicit start, end, and public label when relevant
 - `provider`, `sourceLabel`, and `disclosure` — provenance and public explanation
-- `sourceType` — synthetic, inventory, vendor feed, public snapshot, configured roadmap, or unknown
+- `sourceType` — synthetic, inventory, vendor feed, public snapshot, spreadsheet snapshot, configured roadmap, or unknown
 - `verification` — an independent state, nullable public evidence reference, and optional note
 - `methodologyNote` — short source-level method context when available
 
 Stale and unavailable are not quality grades. “Reported” is a publication state, not proof that a value was measured or verified. The UI and API envelopes consume the structured metadata directly.
+
+## Site content
+
+### `SustainabilityOverviewContent`
+
+Contains the public sustainability definition, Storm King place context, the alignment statements for Truth, Respect, Responsibility, and Scholarship, and approved public source URLs.
+
+### `StartContent`
+
+Contains the working introduction, nullable adoption rationale/owner/date, `working-purpose|confirmed` adoption status, public workflow, privacy boundary, and nullable snapshot cadence. Validation requires rationale, owner, and date before adoption can be labeled confirmed.
+
+### `CarbonNeutralityPlanContent`
+
+Contains the framework definition, nullable approved goal and years, nullable boundary and comparable gross values, nullable target-attainment percentage/method, a separate nullable retired-credit ledger with evidence, plan status, update date, quality, and framework stages. A percentage requires every calculation input and must match:
+
+```text
+100 × (baseline gross − latest gross) ÷ (baseline gross − target gross)
+```
+
+The raw percentage may be negative or exceed 100. The UI clamps only the visual bar. Synthetic snapshots cannot publish a percentage or retired-credit quantity.
 
 ## Carbon
 
@@ -74,7 +94,11 @@ Contains a public label, stage, and target description.
 
 ### `PublicProject`
 
-Contains only public identifiers, title, category/status, summary, milestone, nullable reported result, result quality, nullable public verification reference, nullable next public step, ISO updated date, and update quality. `null` result means nothing has been measured or reported; it is not zero. A verified result or update requires a public reference at validation time. The model has no internal notes, contact fields, identities, concerns, links, or approval discussions.
+Contains only public identifiers, title, category/status, summary, milestone, structured `metrics`, nullable legacy result, result quality, nullable public verification reference, nullable next public step, ISO updated date, and update quality. `null` result means nothing has been measured or reported; it is not zero. A verified result or update requires a public reference at validation time. The model has no internal notes, contact fields, identities, concerns, private links, or approval discussions.
+
+### `PublicProjectMetric`
+
+Carries metric ID/label/type, nullable numeric value, unit, nullable reporting-period dates, quality, source label, nullable method/evidence, and optional sourced equivalencies. Every non-null value requires both period dates. Estimated emissions require a method. A retired-credit quantity requires public retirement evidence. Equivalencies require a non-null underlying value, method, and HTTP(S) factor source. Synthetic project snapshots keep all metric values null.
 
 ### `ProjectProvider`
 
@@ -133,13 +157,17 @@ This repetition is intentional: a consumer can see provenance even when it does 
 
 ## Versioned external documents
 
+### Site-content snapshot
+
+The version-1 site-content document contains source metadata, `overview`, `start`, and `carbonPlan`. Validation rejects unknown keys, unsafe URLs, unsupported adoption/plan states, inconsistent synthetic/publication metadata, incomplete confirmed START adoption, unsupported carbon percentages, and credits without method/evidence. The developer fixture is `fixtures/site-content.example.json`.
+
 ### Carbon inventory document
 
 The normalized carbon document uses `schemaVersion: 1` and contains source metadata, overview, history, and methodology. Runtime validation preserves null scopes and genuine zero, accepts only supported carbon units, requires consistent history units, rejects duplicate year/kind pairs and implausible future timestamps, and never derives reduction, offset arithmetic, or neutrality. A verified record requires an HTTP(S) evidence reference. The source supplies its reporting period and methodology version. The developer fixture is `fixtures/carbon-inventory.example.json`.
 
 ### START public snapshot
 
-The snapshot uses `schemaVersion: 1`, explicit source metadata, and `publicProjects`. Validation is strict at the top level, source, project, and milestone objects. Unknown keys are rejected before the provider performs a second field-by-field whitelist. Project updates cannot be later than snapshot generation, and verified impact requires a public HTTP(S) reference. This makes accidental private-field transport a failed import rather than a silently ignored operational mistake. The developer fixture is `fixtures/start-public-snapshot.example.json`.
+The snapshot uses `schemaVersion: 1`, explicit source metadata, and `publicProjects`. Validation is strict at the top level, source, project, milestone, metric, and equivalency objects. Unknown keys are rejected before the provider performs a second field-by-field whitelist. Project/metric periods cannot extend beyond snapshot generation, every numeric metric has a period, and verified impact requires public evidence. This makes accidental private-field transport a failed import rather than a silently ignored operational mistake. The developer fixture is `fixtures/start-public-snapshot.example.json`.
 
 ### Roadmap configuration document
 

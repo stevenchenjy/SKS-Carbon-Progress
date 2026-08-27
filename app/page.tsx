@@ -1,228 +1,240 @@
 import Link from 'next/link';
-import { DataBarChart } from '@/app/components/DataBarChart';
 import { DataQualityBadge } from '@/app/components/DataQualityBadge';
 import { PrototypeNotice } from '@/app/components/PrototypeNotice';
-import { RoadmapGrid } from '@/app/components/RoadmapGrid';
-import { getCarbonProvider } from '@/lib/carbon/server';
-import { getEnergyProvider } from '@/lib/energy/server';
-import { getRoadmapProvider } from '@/lib/roadmap/server';
 import { unavailableMetadata } from '@/lib/provider-metadata';
-import type { CarbonOverview } from '@/lib/carbon/types';
-import type { EnergyImpact, EnergySnapshot } from '@/lib/energy/types';
+import { getSiteContentProvider } from '@/lib/site-content/server';
+import type {
+  CarbonNeutralityPlanContent,
+  StartContent,
+  SustainabilityOverviewContent,
+} from '@/lib/site-content/types';
 
 export const dynamic = 'force-dynamic';
 
-function formatTimestamp(value: string): string {
-  const timestamp = new Date(value);
-  if (Number.isNaN(timestamp.getTime())) return 'Awaiting update';
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    timeZone: 'America/New_York',
-    timeZoneName: 'short',
-  }).format(timestamp);
-}
+const unavailableOverview: SustainabilityOverviewContent = {
+  sustainabilityDefinition: 'Sustainability content is temporarily unavailable. No replacement claim has been inferred.',
+  placeContext: 'The selected public-content source could not be loaded.',
+  valueAlignment: [],
+  sourceReferences: [],
+};
 
-const emptyCarbon: CarbonOverview = {
+const unavailableStart: StartContent = {
+  introduction: 'The selected START source could not be loaded.',
+  adoptionRationale: null,
+  adoptionStatus: 'working-purpose',
+  owner: null,
+  adoptionDate: null,
+  workflow: [],
+  privacyBoundary: 'No private information is exposed when the source is unavailable.',
+  snapshotCadence: null,
+};
+
+const unavailablePlan: CarbonNeutralityPlanContent = {
+  definition: 'The selected carbon-plan source could not be loaded.',
+  goal: null,
+  targetYear: null,
   baselineYear: null,
   latestReportingYear: null,
-  reductionPercent: null,
-  emissionsTrend: 'Source unavailable',
-  reportingStatus: 'Unavailable',
+  inventoryBoundary: null,
+  baselineGrossEmissionsTco2e: null,
+  latestGrossEmissionsTco2e: null,
+  targetGrossEmissionsTco2e: null,
+  progressPercent: null,
+  progressMetric: null,
+  progressMethod: null,
+  retiredOffsetsTco2e: null,
+  offsetsMethod: null,
+  offsetsEvidenceReference: null,
+  status: 'Framework',
+  updatedAt: null,
   quality: 'pending',
-  scopeBreakdown: [],
-  totals: null,
+  framework: [],
 };
 
-const emptyEnergy: EnergySnapshot = {
-  currentPowerKw: null,
-  energyTodayKwh: null,
-  weeklyTrendPercent: null,
-  lastUpdatedAt: '',
-  quality: 'pending',
-  coverage: { kind: 'unknown', label: 'Coverage unavailable', monitoredDeviceCount: null, note: 'No energy coverage claim is available.' },
-};
-
-const emptyImpact: EnergyImpact = {
-  avoidedEnergyKwh: null,
-  comparisonMethod: 'No reviewed comparison is available.',
-  quality: 'pending',
-};
-
-async function loadCarbonHome() {
+function sourceName(value: string): string {
   try {
-    const provider = getCarbonProvider();
-    const [carbon, history, metadata] = await Promise.all([provider.getOverview(), provider.getHistory(), provider.getMetadata()]);
-    return { carbon, history, metadata };
+    const url = new URL(value);
+    if (url.hostname === 'sks.org') return 'Storm King School';
+    if (url.hostname === 'www.un.org') return 'United Nations';
+    return url.hostname.replace(/^www\./, '');
   } catch {
-    return {
-      carbon: structuredClone(emptyCarbon),
-      history: [],
-      metadata: unavailableMetadata('Carbon data', 'The carbon source could not be loaded. No value has been inferred or replaced with mock data.'),
-    };
+    return 'Source';
   }
 }
 
-async function loadEnergyHome() {
+async function loadSiteContent() {
   try {
-    const provider = getEnergyProvider();
-    const [energy, impact, history, metadata] = await Promise.all([
-      provider.getCurrentUsage(),
-      provider.getImpactSummary(),
-      provider.getHistoricalUsage('24h'),
+    const provider = getSiteContentProvider();
+    const [overview, start, carbonPlan, metadata] = await Promise.all([
+      provider.getOverview(),
+      provider.getStart(),
+      provider.getCarbonPlan(),
       provider.getMetadata(),
     ]);
-    return { energy, impact, history, metadata };
+    return { overview, start, carbonPlan, metadata };
   } catch {
     return {
-      energy: structuredClone(emptyEnergy),
-      impact: structuredClone(emptyImpact),
-      history: [],
-      metadata: unavailableMetadata('Energy data', 'The monitored-energy source could not be loaded. No replacement value is being shown.'),
-    };
-  }
-}
-
-async function loadRoadmapHome() {
-  try {
-    const provider = getRoadmapProvider();
-    const [areas, metadata] = await Promise.all([provider.getAreas(), provider.getMetadata()]);
-    return { areas, metadata };
-  } catch {
-    return {
-      areas: [],
-      metadata: unavailableMetadata('Roadmap data', 'The roadmap source could not be loaded. Other public information remains available.'),
+      overview: unavailableOverview,
+      start: unavailableStart,
+      carbonPlan: unavailablePlan,
+      metadata: unavailableMetadata(
+        'Sustainability content',
+        'The selected content source could not be loaded. No narrative, status, or result has been substituted.',
+      ),
     };
   }
 }
 
 export default async function Home() {
-  const [carbonResult, energyResult, roadmapResult] = await Promise.all([loadCarbonHome(), loadEnergyHome(), loadRoadmapHome()]);
-  const { carbon, history: carbonHistory, metadata: carbonMetadata } = carbonResult;
-  const { energy, impact, history: energyHistory, metadata: energyMetadata } = energyResult;
-  const { areas: roadmap, metadata: roadmapMetadata } = roadmapResult;
-  const carbonUnit = carbonHistory.find((point) => point.unit)?.unit ?? 'unit not supplied';
+  const { overview, start, carbonPlan, metadata } = await loadSiteContent();
 
-  const overview = [
-    { label: carbonMetadata.synthetic ? 'Illustrative baseline' : 'Baseline year', value: carbon.baselineYear === null ? 'Awaiting data' : String(carbon.baselineYear), note: carbonMetadata.sourceLabel },
-    { label: carbonMetadata.synthetic ? 'Latest mock inventory' : 'Latest inventory', value: carbon.latestReportingYear === null ? 'Awaiting data' : String(carbon.latestReportingYear), note: carbon.emissionsTrend },
-    { label: 'Reduction', value: carbon.reductionPercent === null ? (carbonMetadata.synthetic ? 'Mock only' : 'Awaiting data') : `${carbon.reductionPercent}%`, note: carbonMetadata.synthetic ? 'No school result loaded' : carbonMetadata.sourceLabel },
-    { label: 'Reporting status', value: carbon.reportingStatus, note: `Quality: ${carbonMetadata.status}` },
+  const areas = [
+    {
+      index: '01',
+      title: 'Overview',
+      description: 'What sustainability means here, and how place and school values shape the work.',
+      href: '#overview',
+      status: 'Public context',
+    },
+    {
+      index: '02',
+      title: 'START',
+      description: 'A working coordination system for projects, evidence, review, and public-ready updates.',
+      href: '/start',
+      status: start.adoptionStatus === 'confirmed' ? 'Adoption confirmed' : 'Purpose drafted',
+    },
+    {
+      index: '03',
+      title: 'Carbon Neutrality Plan',
+      description: 'The proposed framework for defining, measuring, reducing, and transparently reporting emissions.',
+      href: '/carbon',
+      status: carbonPlan.status,
+    },
+    {
+      index: '04',
+      title: 'Projects',
+      description: 'Active work such as CLYNK and composting, with outcome fields ready for reviewed evidence.',
+      href: '/projects',
+      status: 'Metrics pending',
+    },
   ];
 
   return (
     <main id="main-content">
-      <section className="hero-shell">
+      <section className="hero-shell overview-hero-shell">
         <div className="hero-copy">
-          <p className="eyebrow"><span /> A transparent climate journey</p>
-          <h1 aria-label="Our path to a lower-carbon campus.">Our path to a<br /><em>lower-carbon</em> campus.</h1>
+          <p className="eyebrow"><span /> A school shaped by the mountain</p>
+          <h1 aria-label="Sustainability where we live and learn.">Sustainability,<br /><em>where we live</em> and learn.</h1>
           <p className="hero-intro">
-            A future home for sharing how Storm King School measures, learns,
-            and acts toward a lower-carbon campus. Careful measurement
-            turns ambition into a journey the whole community can understand.
+            Storm King’s setting makes stewardship immediate. This platform is
+            designed to connect the school’s values, its sustainability work,
+            and carefully reviewed evidence—without presenting placeholders as results.
           </p>
-          <div className="stage-line"><span>Current stage</span><strong>Prototype foundation</strong><DataQualityBadge quality="prototype" /></div>
+          <div className="stage-line">
+            <span>Current stage</span>
+            <strong>Building the public evidence base</strong>
+            <DataQualityBadge quality={metadata.status} />
+          </div>
           <div className="hero-actions">
-            <Link className="primary-button" href="/carbon">Explore example methodology <span>↗</span></Link>
-            <Link className="text-link" href="/projects">View sample projects <span>→</span></Link>
+            <Link className="primary-button" href="/start">Understand START <span>↗</span></Link>
+            <Link className="text-link" href="/carbon">Explore the carbon framework <span>→</span></Link>
           </div>
         </div>
 
-        <aside className="progress-card" aria-label="Prototype readiness stage">
+        <aside className="progress-card" aria-label="Public reporting readiness">
           <div className="card-topline">
-            <span>Current readiness</span>
-            <span className="quality-dot">Prototype</span>
+            <span>Public reporting readiness</span>
+            <span className="quality-dot">{carbonPlan.status}</span>
           </div>
           <div className="progress-visual">
-            <div className="progress-ring readiness-ring" role="img" aria-label="Build the baseline before publishing progress">
-              <div><strong>Build</strong><span>the baseline</span></div>
+            <div className="progress-ring readiness-ring" role="img" aria-label="Define and approve the baseline before publishing progress">
+              <div><strong>Define</strong><span>measure · review</span></div>
             </div>
           </div>
-          <p>No progress percentage is assigned until the school approves a target, baseline, boundary, and defensible metric.</p>
-          <div className="card-footer"><span>Define</span><i /> <span>Measure</span><i /> <span>Review</span></div>
+          <p>
+            An emissions-reduction percentage will appear only after Storm King
+            approves a goal, baseline, reporting boundary, target, and calculation method.
+          </p>
+          <div className="card-footer"><span>Place</span><i /><span>System</span><i /><span>Action</span></div>
         </aside>
       </section>
 
-      <section className="overview-section section-pad" aria-labelledby="overview-heading">
+      <PrototypeNotice metadata={metadata} />
+
+      <section className="definition-section section-pad" id="overview" aria-labelledby="overview-heading">
         <div className="section-intro split-intro">
-          <div><p className="eyebrow"><span /> Where are we now?</p><h2 id="overview-heading">Carbon progress,<br /><em>with context.</em></h2></div>
-          <p>{carbonMetadata.availability === 'unavailable' ? 'The selected carbon source is unavailable. No result has been inferred or replaced with mock data.' : carbonMetadata.synthetic ? 'This prototype uses an indexed sample pathway to demonstrate the reporting structure. It does not contain a real inventory or reduction result.' : `This overview summarizes the inventory pathway supplied by ${carbonMetadata.sourceLabel}, with quality and provenance kept visible.`}</p>
+          <div>
+            <p className="eyebrow"><span /> 01 / Overview</p>
+            <h2 id="overview-heading">Care for today.<br /><em>Keep choices open.</em></h2>
+          </div>
+          <p>{overview.sustainabilityDefinition}</p>
         </div>
-        <PrototypeNotice compact metadata={carbonMetadata} />
-        <div className="overview-grid overview-grid-four">
-          {overview.map((item) => (
-            <article key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.note}</small>
+
+        <div className="place-panel">
+          <span>Why this place matters</span>
+          <p>{overview.placeContext}</p>
+          {overview.sourceReferences.length > 0 ? (
+            <div className="source-links" aria-label="Overview sources">
+              {overview.sourceReferences.map((reference) => (
+                <a href={reference} key={reference} rel="noreferrer" target="_blank">
+                  {sourceName(reference)} <span>↗</span>
+                </a>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="values-section section-pad" aria-labelledby="values-heading">
+        <div className="section-intro split-intro light-intro">
+          <div>
+            <p className="eyebrow"><span /> Sustainability and school values</p>
+            <h2 id="values-heading">A way to practice<br /><em>what Storm King values.</em></h2>
+          </div>
+          <p>Each value becomes a practical standard for how projects are measured, explained, and improved.</p>
+        </div>
+        <div className="values-grid">
+          {overview.valueAlignment.map((item, index) => (
+            <article key={item.value}>
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              <h3>{item.value}</h3>
+              <p>{item.statement}</p>
             </article>
           ))}
         </div>
-        <div className="trend-panel">
-          <div className="trend-copy">
-            <DataQualityBadge quality={carbon.quality} />
-            <h3>{carbonMetadata.synthetic ? 'Illustrative emissions index' : 'Reported emissions pathway'}</h3>
-            <p>{carbonMetadata.synthetic ? 'A normalized sample series shows how historical inventories and future scenarios could sit together without confusing projections with results.' : `The pathway supplied by ${carbonMetadata.sourceLabel} distinguishes reported inventories from scenarios and keeps the provider unit visible.`}</p>
-            <Link className="text-link" href="/carbon">Read how measurement will work <span>→</span></Link>
-          </div>
-          <DataBarChart
-            points={carbonHistory.map((point) => ({ label: String(point.year), value: point.value }))}
-            title={carbonMetadata.synthetic ? 'Illustrative carbon pathway' : 'Reported carbon pathway'}
-            unit={carbonUnit}
-            tone="lime"
-            isSynthetic={carbonMetadata.synthetic}
-          />
-        </div>
       </section>
 
-      <section className="roadmap-section section-pad" aria-labelledby="roadmap-heading">
-        <div className="section-intro split-intro light-intro">
-          <div><p className="eyebrow"><span /> What moves us forward?</p><h2 id="roadmap-heading">Five pathways.<br /><em>One shared direction.</em></h2></div>
-          <p>{roadmapMetadata.availability === 'unavailable' ? 'The selected roadmap source is unavailable. Other public information remains accessible.' : roadmapMetadata.synthetic ? 'These qualitative example stages test how day-to-day action could connect with long-term goals without inventing percentage progress.' : 'Current stages connect day-to-day action with long-term goals, using the status supplied by the roadmap provider.'}</p>
-        </div>
-        <PrototypeNotice compact metadata={roadmapMetadata} />
-        <RoadmapGrid areas={roadmap} metadata={roadmapMetadata} />
-      </section>
-
-      <section className="energy-preview section-pad" aria-labelledby="energy-heading">
-        <div className="energy-visual">
-          <div className="energy-visual-top"><span>{energyMetadata.sourceLabel}</span><DataQualityBadge quality={energyMetadata.status} /></div>
-          <DataBarChart
-            points={energyHistory.map((point) => ({ label: point.label, value: point.value }))}
-            title="Twenty-four hour monitored electricity preview"
-            unit="kW"
-            sparseLabels
-            tone="lime"
-            isSynthetic={energyMetadata.synthetic}
-          />
-        </div>
-        <div className="energy-copy">
-          <p className="eyebrow"><span /> Monitored energy preview</p>
-          <h2 id="energy-heading">Make monitored energy <em>visible.</em></h2>
-          <p>Timely monitored-energy information can help students ask better questions without mistaking selected smart plugs for total campus electricity.</p>
-          <p className="exact-source-note">{energyMetadata.disclosure}</p>
-          <div className="energy-metrics">
-            <div><span>Current monitored power</span><strong>{energy.currentPowerKw ?? '—'} <small>kW</small></strong></div>
-            <div><span>Monitored energy today</span><strong>{energy.energyTodayKwh ?? '—'} <small>kWh</small></strong></div>
-            <div><span>Estimated avoided energy</span><strong>{impact.avoidedEnergyKwh ?? '—'} <small>kWh</small></strong></div>
-            <div><span>Last {energyMetadata.synthetic ? 'simulated ' : ''}update</span><strong className="time-value">{formatTimestamp(energy.lastUpdatedAt)}</strong></div>
+      <section className="four-areas-section section-pad" aria-labelledby="areas-heading">
+        <div className="section-intro split-intro">
+          <div>
+            <p className="eyebrow"><span /> Four connected areas</p>
+            <h2 id="areas-heading">From shared purpose<br /><em>to reviewed progress.</em></h2>
           </div>
-          <Link className="primary-button" href="/energy">Open the energy preview <span>↗</span></Link>
+          <p>The structure follows a simple sequence: define the purpose, coordinate the work, establish the carbon plan, and publish evidence-backed project outcomes.</p>
+        </div>
+        <div className="area-link-grid">
+          {areas.map((area) => (
+            <Link href={area.href} key={area.index}>
+              <span className="area-index">{area.index}</span>
+              <small>{area.status}</small>
+              <h3>{area.title}</h3>
+              <p>{area.description}</p>
+              <strong>Explore <span>→</span></strong>
+            </Link>
+          ))}
         </div>
       </section>
 
       <section className="story-section section-pad">
-        <p className="eyebrow"><span /> The story behind the data</p>
+        <p className="eyebrow"><span /> How public reporting should work</p>
         <div className="story-grid">
           <h2>Transparency is not just a number. It is a practice.</h2>
           <div>
-            <p>Future results should be useful to a student encountering climate data for the first time and credible to a partner reviewing the methodology.</p>
+            <p>Future results should be useful to a student encountering climate data for the first time and credible to someone reviewing the methodology.</p>
             <div className="story-steps">
-              <article><span>01</span><h3>Measure</h3><p>Define boundaries and make data quality visible.</p></article>
-              <article><span>02</span><h3>Explain</h3><p>Connect campus numbers to understandable action.</p></article>
-              <article><span>03</span><h3>Learn</h3><p>Invite questions, reflection, and better decisions.</p></article>
+              <article><span>01</span><h3>Measure</h3><p>Define boundaries and keep missing data distinct from zero.</p></article>
+              <article><span>02</span><h3>Review</h3><p>Confirm the method, evidence, owner, and reporting period.</p></article>
+              <article><span>03</span><h3>Publish</h3><p>Share approved fields and retain the source behind each claim.</p></article>
             </div>
           </div>
         </div>
@@ -234,9 +246,9 @@ export default async function Home() {
           <p>This prototype does not collect names, emails, or ideas. Participation should use existing school channels until an approved public process exists.</p>
         </div>
         <div className="participation-grid">
-          <article><span>Students</span><h3>Build through existing clubs.</h3><p>Explore how student-led groups can turn a question into a campus learning project.</p><a href="https://sks.org/student-life/clubs-and-activities/">Explore SKS clubs <span>↗</span></a></article>
-          <article><span>Faculty</span><h3>Use data as a learning tool.</h3><p>Start with the measurement boundary and help students ask what a number can—and cannot—show.</p><Link href="/carbon">Explore methodology <span>→</span></Link></article>
-          <article><span>Families & partners</span><h3>Follow reviewed public work.</h3><p>See the project fields designed for future approved milestones and results.</p><Link href="/projects">View public projects <span>→</span></Link></article>
+          <article><span>Students</span><h3>Build through existing clubs.</h3><p>Turn a campus question into a project with a clear owner, milestone, and way to learn from the result.</p><a href="https://sks.org/student-life/clubs-and-activities/">Explore SKS clubs <span>↗</span></a></article>
+          <article><span>Faculty</span><h3>Use data as a learning tool.</h3><p>Start with the measurement boundary and help students ask what a number can—and cannot—show.</p><Link href="/carbon">Explore the framework <span>→</span></Link></article>
+          <article><span>Families & partners</span><h3>Follow reviewed public work.</h3><p>See the project fields designed for future approved milestones, outcomes, and evidence.</p><Link href="/projects">View active projects <span>→</span></Link></article>
         </div>
       </section>
     </main>
