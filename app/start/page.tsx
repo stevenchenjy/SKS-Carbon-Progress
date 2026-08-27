@@ -8,6 +8,35 @@ import { unavailableMetadata } from '@/lib/provider-metadata';
 import { getSiteContentProvider } from '@/lib/site-content/server';
 import type { StartContent } from '@/lib/site-content/types';
 
+const START_SOURCE_URL = 'https://www.greenschoolsalliance.org/about-start';
+
+const startCapabilities = [
+  {
+    title: 'Blueprint',
+    description: 'A structured, step-by-step roadmap helps a school move from broad sustainability ambitions to coordinated action.',
+  },
+  {
+    title: 'Benchmark',
+    description: 'A set of 53 metrics helps schools establish where they are, identify gaps, and recognize areas of strength.',
+  },
+  {
+    title: 'Analytics',
+    description: 'Schools can follow energy, emissions, water, and waste information to understand patterns and improve efficiency.',
+  },
+  {
+    title: 'Resources',
+    description: 'Project-based guidance, reporting resources, and practical toolkits help teams turn findings into action.',
+  },
+  {
+    title: 'Collaborate',
+    description: 'A central hub brings plans, responsibilities, project work, and progress tracking into one shared space.',
+  },
+  {
+    title: 'Community',
+    description: 'Participating schools can connect with peers, exchange lessons, and learn from sustainability practices elsewhere.',
+  },
+] as const;
+
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
@@ -78,7 +107,7 @@ export default async function StartPage() {
             <p className="eyebrow"><span /> What START is</p>
             <h2 id="start-definition-heading">A consistent path<br /><em>from work to publication.</em></h2>
           </div>
-          <p>START is presented here as a working coordination purpose—not an expansion, launch date, or adoption claim. The School still needs to confirm its official name, history, owner, and rationale.</p>
+          <p>START stands for Sustainability Tracking, Analytics &amp; Roadmap Tool. The Green Schools Alliance describes it as a platform created by schools for schools to structure, measure, and accelerate whole-school sustainability. Storm King’s adoption history, ownership, and approved rationale still await school confirmation.</p>
         </div>
 
         <div className="start-rationale-grid">
@@ -88,13 +117,37 @@ export default async function StartPage() {
             <p>{start.adoptionRationale ?? 'The proposed purpose is to bring projects, responsibilities, milestones, source records, and review into one process. This explains why the system is useful; it does not claim why or when Storm King adopted it.'}</p>
           </article>
           <dl>
-            <div><dt>Official expansion</dt><dd>Awaiting school confirmation</dd></div>
+            <div><dt>Official expansion</dt><dd>Sustainability Tracking, Analytics &amp; Roadmap Tool</dd></div>
             <div><dt>Adoption rationale</dt><dd>{start.adoptionRationale ?? 'Not yet approved for publication'}</dd></div>
             <div><dt>System owner</dt><dd>{start.owner ?? 'Not yet named publicly'}</dd></div>
             <div><dt>Adoption date</dt><dd>{start.adoptionDate ?? 'Not yet confirmed'}</dd></div>
             <div><dt>Snapshot cadence</dt><dd>{start.snapshotCadence ?? 'Not yet approved'}</dd></div>
+            <div><dt>Platform source</dt><dd><a className="start-source-link" href={START_SOURCE_URL} target="_blank" rel="noreferrer">Green Schools Alliance ↗</a></dd></div>
           </dl>
         </div>
+      </section>
+
+      <section className="start-capabilities-section section-pad" aria-labelledby="start-capabilities-heading">
+        <div className="section-intro split-intro">
+          <div>
+            <p className="eyebrow"><span /> How the platform works</p>
+            <h2 id="start-capabilities-heading">Six tools for a<br /><em>whole-school journey.</em></h2>
+          </div>
+          <div className="start-capabilities-intro">
+            <p>START combines planning, measurement, operational analysis, practical resources, teamwork, and peer learning. Together, these functions give a school a repeatable way to understand current performance and organize what comes next.</p>
+            <a href={START_SOURCE_URL} target="_blank" rel="noreferrer">Learn about START from the Green Schools Alliance <span>↗</span></a>
+          </div>
+        </div>
+        <div className="start-capabilities-grid">
+          {startCapabilities.map((capability, index) => (
+            <article key={capability.title}>
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              <h3>{capability.title}</h3>
+              <p>{capability.description}</p>
+            </article>
+          ))}
+        </div>
+        <p className="start-source-note">Platform descriptions are paraphrased from the Green Schools Alliance’s official START overview. They explain START generally and do not confirm Storm King-specific adoption dates, results, or governance.</p>
       </section>
 
       <section className="start-workflow-section section-pad" aria-labelledby="start-workflow-heading">

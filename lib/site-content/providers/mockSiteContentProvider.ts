@@ -44,7 +44,7 @@ const overview: SustainabilityOverviewContent = {
 };
 
 const start: StartContent = {
-  introduction: 'START is the working name for Storm King’s internal sustainability coordination system. It is designed to connect ideas, project owners, milestones, evidence, review, and public-ready updates without exposing private operational records.',
+  introduction: 'START—the Sustainability Tracking, Analytics & Roadmap Tool—is a whole-school sustainability platform created by the Green Schools Alliance. It helps schools organize a step-by-step roadmap, measure performance, track operational impacts, coordinate projects, and turn sustainability work into measurable progress.',
   adoptionRationale: null,
   adoptionStatus: 'working-purpose',
   owner: null,

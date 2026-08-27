@@ -386,6 +386,18 @@ a { color: inherit; text-decoration: none; }
 .start-rationale-grid dl > div:last-child { border-bottom: 0; }
 .start-rationale-grid dt { color: var(--moss); font-size: 8px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
 .start-rationale-grid dd { font-family: Georgia, serif; font-size: 18px; line-height: 1.35; margin: 9px 0 0; }
+.start-source-link { border-bottom: 1px solid var(--ink); display: inline-block; padding-bottom: 3px; }
+.start-source-link:hover, .start-source-link:focus-visible { color: var(--moss); }
+.start-capabilities-section { background: var(--paper); border-top: 1px solid var(--line); }
+.start-capabilities-intro p { color: var(--muted); font-size: 11px; line-height: 1.7; margin: 0 0 20px; }
+.start-capabilities-intro a { border-bottom: 1px solid var(--ink); display: inline-flex; font-size: 9px; font-weight: 800; gap: 12px; letter-spacing: .08em; padding-bottom: 7px; text-transform: uppercase; }
+.start-capabilities-intro a:hover, .start-capabilities-intro a:focus-visible { color: var(--moss); }
+.start-capabilities-grid { border-left: 1px solid var(--line); border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(3, 1fr); }
+.start-capabilities-grid article { background: var(--cream); border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); min-height: 245px; padding: 27px; }
+.start-capabilities-grid article > span { color: var(--moss); font-family: monospace; font-size: 9px; }
+.start-capabilities-grid h3 { font-family: Georgia, serif; font-size: 27px; font-weight: 400; margin: 50px 0 13px; }
+.start-capabilities-grid p { color: var(--muted); font-size: 10px; line-height: 1.6; margin: 0; max-width: 290px; }
+.start-source-note { color: var(--muted); font-size: 9px; line-height: 1.55; margin: 18px 0 0 auto; max-width: 620px; text-align: right; }
 .start-workflow-section { background: var(--forest); color: white; }
 .start-workflow-grid { border-left: 1px solid #477567; display: grid; grid-template-columns: repeat(5, 1fr); list-style: none; margin: 0; padding: 0; }
 .start-workflow-grid li { border-bottom: 1px solid #477567; border-right: 1px solid #477567; border-top: 1px solid #477567; min-height: 230px; padding: 28px 22px; }
@@ -647,7 +659,7 @@ a { color: inherit; text-decoration: none; }
   .values-grid article:nth-child(4) { border-top: 1px solid #477567; }
   .start-rationale-grid, .plan-progress-card { grid-template-columns: 1fr; }
   .plan-progress-values { border-left: 0; border-top: 1px solid var(--line); }
-  .start-workflow-grid, .carbon-framework-grid { grid-template-columns: repeat(3, 1fr); }
+  .start-workflow-grid, .carbon-framework-grid, .start-capabilities-grid { grid-template-columns: repeat(3, 1fr); }
   .snapshot-grid { grid-template-columns: repeat(2, 1fr); }
   .carbon-totals { grid-template-columns: 1fr; }
   .overview-grid-four { grid-template-columns: repeat(2, 1fr); }
@@ -691,11 +703,13 @@ a { color: inherit; text-decoration: none; }
   .page-hero { min-height: 500px; padding-left: 20px; padding-right: 20px; }
   .page-hero h1 { font-size: clamp(52px, 16vw, 74px); }
   .prototype-notice { align-items: start; padding-left: 20px; padding-right: 20px; }
-  .overview-grid-four, .scope-grid, .method-grid, .measure-grid, .metric-grid, .quality-list, .privacy-grid, .values-grid, .area-link-grid, .project-metrics, .snapshot-grid, .start-workflow-grid, .carbon-framework-grid { grid-template-columns: 1fr; }
+  .overview-grid-four, .scope-grid, .method-grid, .measure-grid, .metric-grid, .quality-list, .privacy-grid, .values-grid, .area-link-grid, .project-metrics, .snapshot-grid, .start-workflow-grid, .carbon-framework-grid, .start-capabilities-grid { grid-template-columns: 1fr; }
   .area-link-grid > a { min-height: 280px; }
   .values-grid article, .values-grid article:nth-child(3), .values-grid article:nth-child(4) { border-left: 0; border-top: 1px solid #477567; }
   .values-grid article:first-child { border-top: 0; }
   .start-rationale-grid > article { padding-left: 24px; padding-right: 24px; }
+  .start-capabilities-grid article { min-height: 220px; }
+  .start-source-note { text-align: left; }
   .snapshot-actions { align-items: flex-start; flex-direction: column; }
   .carbon-totals dl { grid-template-columns: 1fr; }
   .carbon-totals dl > div { padding: 14px 0; }
