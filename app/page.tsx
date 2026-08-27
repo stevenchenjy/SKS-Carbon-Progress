@@ -91,27 +91,20 @@ export default async function Home() {
   const areas = [
     {
       index: '01',
-      title: 'Overview',
-      description: 'What sustainability means here, and how place and school values shape the work.',
-      href: '#overview',
-      status: 'Public context',
-    },
-    {
-      index: '02',
       title: 'START',
       description: 'A working coordination system for projects, evidence, review, and public-ready updates.',
       href: '/start',
       status: start.adoptionStatus === 'confirmed' ? 'Adoption confirmed' : 'Purpose drafted',
     },
     {
-      index: '03',
+      index: '02',
       title: 'Carbon Neutrality Plan',
       description: 'The proposed framework for defining, measuring, reducing, and transparently reporting emissions.',
       href: '/carbon',
       status: carbonPlan.status,
     },
     {
-      index: '04',
+      index: '03',
       title: 'Projects',
       description: 'Active work such as CLYNK and composting, with outcome fields ready for reviewed evidence.',
       href: '/projects',
@@ -123,16 +116,16 @@ export default async function Home() {
     <main id="main-content">
       <section className="hero-shell overview-hero-shell">
         <div className="hero-copy">
-          <p className="eyebrow"><span /> A school shaped by the mountain</p>
-          <h1 aria-label="Sustainability where we live and learn.">Sustainability,<br /><em>where we live</em> and learn.</h1>
+          <p className="eyebrow"><span /> Student-initiated · school-wide</p>
+          <h1 aria-label="Sustainability, student-led and school-wide.">Sustainability,<br /><em>student-led</em> and school-wide.</h1>
           <p className="hero-intro">
-            Storm King’s setting makes stewardship immediate. This platform is
-            designed to connect the school’s values, its sustainability work,
-            and carefully reviewed evidence—without presenting placeholders as results.
+            Students initiate ideas and turn campus questions into projects.
+            Faculty, staff, operations, families, and partners help carry that work
+            across the school and connect it to carefully reviewed evidence.
           </p>
           <div className="stage-line">
             <span>Current stage</span>
-            <strong>Building the public evidence base</strong>
+            <strong>Turning student ideas into measurable action</strong>
             <DataQualityBadge quality={metadata.status} />
           </div>
           <div className="hero-actions">
@@ -185,34 +178,14 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="values-section section-pad" aria-labelledby="values-heading">
-        <div className="section-intro split-intro light-intro">
-          <div>
-            <p className="eyebrow"><span /> Sustainability and school values</p>
-            <h2 id="values-heading">A way to practice<br /><em>what Storm King values.</em></h2>
-          </div>
-          <p>Each value becomes a practical standard for how projects are measured, explained, and improved.</p>
-        </div>
-        <div className="values-grid">
-          {overview.valueAlignment.map((item, index) => (
-            <article key={item.value}>
-              <span>{String(index + 1).padStart(2, '0')}</span>
-              <h3>{item.value}</h3>
-              <p>{item.statement}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
       <section className="four-areas-section section-pad" aria-labelledby="areas-heading">
-        <div className="section-intro split-intro">
+        <div className="section-intro areas-intro">
           <div>
-            <p className="eyebrow"><span /> Four connected areas</p>
-            <h2 id="areas-heading">From shared purpose<br /><em>to reviewed progress.</em></h2>
+            <p className="eyebrow"><span /> Three connected areas</p>
+            <h2 id="areas-heading">Follow the work.</h2>
           </div>
-          <p>The structure follows a simple sequence: define the purpose, coordinate the work, establish the carbon plan, and publish evidence-backed project outcomes.</p>
         </div>
-        <div className="area-link-grid">
+        <div className="area-link-grid three-area-grid">
           {areas.map((area) => (
             <Link href={area.href} key={area.index}>
               <span className="area-index">{area.index}</span>
@@ -225,30 +198,62 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="story-section section-pad">
-        <p className="eyebrow"><span /> How public reporting should work</p>
-        <div className="story-grid">
-          <h2>Transparency is not just a number. It is a practice.</h2>
-          <div>
-            <p>Future results should be useful to a student encountering climate data for the first time and credible to someone reviewing the methodology.</p>
-            <div className="story-steps">
-              <article><span>01</span><h3>Measure</h3><p>Define boundaries and keep missing data distinct from zero.</p></article>
-              <article><span>02</span><h3>Review</h3><p>Confirm the method, evidence, owner, and reporting period.</p></article>
-              <article><span>03</span><h3>Publish</h3><p>Share approved fields and retain the source behind each claim.</p></article>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <section className="participation-section section-pad" aria-labelledby="participation-heading">
         <div className="section-intro split-intro">
-          <div><p className="eyebrow"><span /> Take part</p><h2 id="participation-heading">Turn public data<br /><em>into shared learning.</em></h2></div>
-          <p>This prototype does not collect names, emails, or ideas. Participation should use existing school channels until an approved public process exists.</p>
+          <div><p className="eyebrow"><span /> Data preview</p><h2 id="participation-heading">See school-wide action<br /><em>through data.</em></h2></div>
+          <p>The charts show how a future public dashboard could connect student-led activity, evidence readiness, and participation across the school.</p>
         </div>
-        <div className="participation-grid">
-          <article><span>Students</span><h3>Build through existing clubs.</h3><p>Turn a campus question into a project with a clear owner, milestone, and way to learn from the result.</p><a href="https://sks.org/student-life/clubs-and-activities/">Explore SKS clubs <span>↗</span></a></article>
-          <article><span>Faculty</span><h3>Use data as a learning tool.</h3><p>Start with the measurement boundary and help students ask what a number can—and cannot—show.</p><Link href="/carbon">Explore the framework <span>→</span></Link></article>
-          <article><span>Families & partners</span><h3>Follow reviewed public work.</h3><p>See the project fields designed for future approved milestones, outcomes, and evidence.</p><Link href="/projects">View active projects <span>→</span></Link></article>
+        <div className="illustrative-data-notice">
+          <strong>Illustrative dashboard model</strong>
+          <span>Example values only · not Storm King results</span>
+        </div>
+        <div className="data-graph-grid">
+          <figure className="data-graph-panel activity-graph">
+            <div className="data-graph-heading"><span>01 / Student project activity</span><strong>Momentum over time</strong></div>
+            <div className="activity-bars" role="img" aria-label="Illustrative monthly project activity rising and falling across six periods">
+              {[38, 56, 47, 72, 64, 88].map((value, index) => (
+                <div className="activity-bar-column" key={value + index}>
+                  <i style={{ height: `${value}%` }} />
+                  <small>{['P1', 'P2', 'P3', 'P4', 'P5', 'P6'][index]}</small>
+                </div>
+              ))}
+            </div>
+            <figcaption>Example signal: ideas, milestones, and evidence updates by period</figcaption>
+          </figure>
+
+          <figure className="data-graph-panel readiness-graph">
+            <div className="data-graph-heading"><span>02 / Evidence readiness</span><strong>From activity to proof</strong></div>
+            <div className="readiness-bars">
+              {[
+                ['Project records', 82],
+                ['Measured outcomes', 61],
+                ['Reviewed evidence', 43],
+              ].map(([label, value]) => (
+                <div className="readiness-row" key={label}>
+                  <span>{label}</span>
+                  <div><i style={{ width: `${value}%` }} /></div>
+                  <small>{value}%</small>
+                </div>
+              ))}
+            </div>
+            <figcaption>Example values show how data quality could become visible</figcaption>
+          </figure>
+
+          <figure className="data-graph-panel reach-graph">
+            <div className="data-graph-heading"><span>03 / School-wide reach</span><strong>Students at the center</strong></div>
+            <div className="reach-visual">
+              <div className="reach-ring" role="img" aria-label="Illustrative participation model led by students and supported across the school">
+                <div><strong>Student-led</strong><span>school-wide support</span></div>
+              </div>
+              <ul>
+                <li><i className="student-swatch" /><span>Students</span><strong>50%</strong></li>
+                <li><i className="faculty-swatch" /><span>Faculty</span><strong>25%</strong></li>
+                <li><i className="operations-swatch" /><span>Operations</span><strong>15%</strong></li>
+                <li><i className="partner-swatch" /><span>Partners</span><strong>10%</strong></li>
+              </ul>
+            </div>
+            <figcaption>Example participation mix—not a measured headcount</figcaption>
+          </figure>
         </div>
       </section>
     </main>
