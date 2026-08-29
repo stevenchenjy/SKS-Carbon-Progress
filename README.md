@@ -4,7 +4,7 @@ SKS Sustainability Progress is a public-facing prototype for Storm King School. 
 
 - `/` — **Overview**: a public definition of sustainability, Storm King’s Hudson Valley setting, and alignment with Truth, Respect, Responsibility, and Scholarship.
 - `/start` — **START**: the working coordination purpose, proposed review workflow, public snapshot, and private/public boundary.
-- `/carbon` — **Carbon Neutrality Plan**: the proposed framework, an evidence-gated target-attainment bar, carbon inventory structure, and methodology.
+- `/carbon` — **Carbon Neutrality Plan**: the proposed framework, an evidence-gated target-attainment result, carbon inventory structure, and methodology.
 - `/projects` — **Projects**: CLYNK and composting project structures with nullable, source-aware public metrics.
 
 `/energy` remains available as a secondary monitored-energy prototype, but it is not part of the four-item primary navigation.
@@ -77,7 +77,7 @@ Staff updates governed workbook
 
 The workbook separates three ledgers:
 
-1. **Gross emissions** — the only ledger used by the carbon target-attainment bar.
+1. **Gross emissions** — the only ledger used by the carbon target-attainment result.
 2. **Retired credits/removals** — documented separately with retirement evidence.
 3. **Project outcomes** — CLYNK containers/proceeds, compost mass, modeled project benefits, and other activity metrics.
 
@@ -108,18 +108,18 @@ Use `npm run providers:status` to print readiness and missing variable names wit
 
 ## Carbon progress semantics
 
-The plan bar is labeled **Emissions-reduction progress**, not “percent carbon neutral.” It uses:
+The published percentage is labeled as a **target-attainment result**, not “percent carbon neutral.” It uses:
 
 ```text
 100 × (baseline gross − latest gross) ÷ (baseline gross − target gross)
 ```
 
-The source must provide the approved goal, baseline and target years, comparable gross values, boundary, method, and update date. The validator checks the supplied percentage against the formula. Text may show a negative value or more than 100%; only the visual bar is clamped to 0–100. Credits and project outcomes stay outside the numerator.
+The source must provide the approved goal, baseline and target years, comparable gross values, boundary, method, metric label, and update date. The validator checks the supplied percentage against the formula. The interface displays the supplied result and metric without converting it into a bounded progress-bar state. Credits and project outcomes stay outside the numerator.
 
 ## Mock and placeholder content
 
 - `MockSiteContentProvider` uses official public Storm King sources for place and values, while keeping START adoption and carbon-plan result fields null.
-- `MockProjectProvider` includes the user-supplied names CLYNK Container Collection and Campus Composting; every count, weight, carbon estimate, period, and evidence link remains pending.
+- `MockProjectProvider` includes local prototype records named CLYNK Container Collection and Campus Composting; every count, weight, carbon estimate, period, and evidence link remains pending school review.
 - `MockCarbonProvider` uses null scope totals and an illustrative index rather than invented tonnes.
 - `MockRevertProvider` and `MockRoadmapProvider` remain secondary prototype providers.
 

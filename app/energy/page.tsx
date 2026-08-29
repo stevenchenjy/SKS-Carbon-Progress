@@ -1,13 +1,30 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { DataBarChart } from '@/app/components/DataBarChart';
+import { DataNotes } from '@/app/components/DataNotes';
 import { DataQualityBadge } from '@/app/components/DataQualityBadge';
 import { PrototypeNotice } from '@/app/components/PrototypeNotice';
-import { getEnergyProvider } from '@/lib/energy/server';
-import { unavailableMetadata } from '@/lib/provider-metadata';
-import type { EnergyImpact, EnergySnapshot } from '@/lib/energy/types';
+import { energyMetricQuality } from '@/app/energy/metric-quality';
 import { freshnessLabel } from '@/lib/claim-safety';
+import { getEnergyProvider } from '@/lib/energy/server';
+import type { EnergyHistoryRange, EnergyPoint, EnergySnapshot } from '@/lib/energy/types';
+import { unavailableMetadata, type ProviderMetadata } from '@/lib/provider-metadata';
 
 export const dynamic = 'force-dynamic';
+
+const unavailableSnapshot: EnergySnapshot = {
+  currentPowerKw: null,
+  energyTodayKwh: null,
+  weeklyTrendPercent: null,
+  lastUpdatedAt: '',
+  quality: 'pending',
+  coverage: {
+    kind: 'unknown',
+    label: 'Coverage unavailable',
+    monitoredDeviceCount: null,
+    note: 'No monitored-energy coverage claim is available.',
+  },
+};
 
 function formatTimestamp(value: string): string {
   const timestamp = new Date(value);
@@ -22,115 +39,163 @@ function formatTimestamp(value: string): string {
   }).format(timestamp);
 }
 
-export const metadata: Metadata = {
-  title: 'Energy preview | SKS Carbon Progress',
-  description: 'A simulated public energy monitoring interface prepared for a future reviewed Revert Tech data connection.',
-};
-
-async function loadEnergyPageData() {
-  try {
-    const provider = getEnergyProvider();
-    const [snapshot, hourly, weekly, impact, providerMetadata] = await Promise.all([
-      provider.getCurrentUsage(),
-      provider.getHistoricalUsage('24h'),
-      provider.getHistoricalUsage('7d'),
-      provider.getImpactSummary(),
-      provider.getMetadata(),
-    ]);
-    return { snapshot, hourly, weekly, impact, providerMetadata };
-  } catch {
-    const snapshot: EnergySnapshot = {
-      currentPowerKw: null,
-      energyTodayKwh: null,
-      weeklyTrendPercent: null,
-      lastUpdatedAt: '',
-      quality: 'pending',
-      coverage: { kind: 'unknown', label: 'Coverage unavailable', monitoredDeviceCount: null, note: 'No monitored-energy coverage claim is available.' },
-    };
-    const impact: EnergyImpact = {
-      avoidedEnergyKwh: null,
-      comparisonMethod: 'No reviewed comparison is available.',
-      quality: 'pending',
-    };
-    return {
-      snapshot,
-      hourly: [],
-      weekly: [],
-      impact,
-      providerMetadata: unavailableMetadata('Energy data', 'The monitored-energy source could not be loaded. No values were inferred or replaced with mock data.'),
-    };
-  }
+function formatMetric(value: number | null, unit: string): string {
+  if (value === null) return 'Awaiting data';
+  return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(value)} ${unit}`;
 }
 
-export default async function EnergyPage() {
-  const { snapshot, hourly, weekly, impact, providerMetadata } = await loadEnergyPageData();
+export const metadata: Metadata = {
+  title: 'Energy preview | Storm King Sustainability Field Report',
+  description: 'A selected-device energy preview with explicit coverage, source, freshness, and accessible time-series data.',
+};
 
-  const metrics = [
-    { label: 'Current Monitored Power', value: snapshot.currentPowerKw, unit: 'kW', quality: snapshot.quality, note: providerMetadata.synthetic ? 'Simulated selected-device load' : 'Current monitored load' },
-    { label: "Today's Monitored Energy", value: snapshot.energyTodayKwh, unit: 'kWh', quality: snapshot.quality, note: providerMetadata.synthetic ? 'Synthetic selected-device total' : 'Provider-supplied monitored total' },
-    { label: 'Weekly Trend', value: snapshot.weeklyTrendPercent, unit: '%', quality: snapshot.quality, note: providerMetadata.synthetic ? 'Versus a synthetic prior week' : 'Versus the provider comparison period' },
-    { label: 'Avoided Energy', value: impact.avoidedEnergyKwh, unit: 'kWh', quality: impact.quality, note: providerMetadata.synthetic ? 'Illustrative estimate only' : impact.comparisonMethod },
-  ];
+async function loadEnergyPageData(range: EnergyHistoryRange): Promise<{
+  snapshot: EnergySnapshot;
+  history: EnergyPoint[];
+  providerMetadata: ProviderMetadata;
+}> {
+  let provider: ReturnType<typeof getEnergyProvider>;
+  try {
+    provider = getEnergyProvider();
+  } catch {
+    return {
+      snapshot: unavailableSnapshot,
+      history: [],
+      providerMetadata: unavailableMetadata(
+        'Energy data',
+        'The monitored-energy source could not be configured. No values were inferred or replaced with mock data.',
+      ),
+    };
+  }
+
+  const [snapshotResult, historyResult, metadataResult] = await Promise.allSettled([
+    provider.getCurrentUsage(),
+    provider.getHistoricalUsage(range),
+    provider.getMetadata(),
+  ]);
+
+  if (metadataResult.status === 'rejected') {
+    return {
+      snapshot: unavailableSnapshot,
+      history: [],
+      providerMetadata: unavailableMetadata(
+        'Energy data',
+        'The monitored-energy source metadata could not be loaded, so no source values are being published.',
+      ),
+    };
+  }
+
+  return {
+    snapshot: snapshotResult.status === 'fulfilled' ? snapshotResult.value : unavailableSnapshot,
+    history: historyResult.status === 'fulfilled' ? historyResult.value : [],
+    providerMetadata: metadataResult.value,
+  };
+}
+
+interface EnergyPageProps {
+  searchParams?: Promise<{ range?: string | string[] }>;
+}
+
+export default async function EnergyPage({ searchParams }: EnergyPageProps = {}) {
+  const params = searchParams ? await searchParams : {};
+  const range: EnergyHistoryRange = params.range === '7d' ? '7d' : '24h';
+  const { snapshot, history, providerMetadata } = await loadEnergyPageData(range);
+  const hasSnapshot = snapshot.currentPowerKw !== null || snapshot.energyTodayKwh !== null;
+  const historyUnit = range === '24h' ? 'kW' : 'kWh';
 
   return (
     <main id="main-content">
-      <section className="page-hero energy-page-hero">
-        <p className="eyebrow"><span /> Public energy preview</p>
-        <h1 aria-label="See when monitored energy changes.">See when monitored<br /><em>energy changes.</em></h1>
-        <p>{providerMetadata.availability === 'unavailable' ? 'The selected monitored-energy source is unavailable. No reading has been inferred or replaced.' : providerMetadata.synthetic ? 'A simulated selected-device interface for exploring patterns and preparing for a future reviewed Revert Tech feed.' : `A public interface for exploring the monitored coverage supplied by ${providerMetadata.sourceLabel}.`}</p>
-        <div className="energy-live-label"><i /><span>{providerMetadata.sourceLabel}</span><strong>Last {providerMetadata.synthetic ? 'mock ' : ''}update · {formatTimestamp(snapshot.lastUpdatedAt)}</strong></div>
+      <section className="page-hero energy-hero">
+        <div>
+          <h1>A monitored signal, not a campus total.</h1>
+          <p>
+            {providerMetadata.availability === 'unavailable'
+              ? 'The selected monitored-energy source is unavailable. No reading has been inferred or replaced.'
+              : providerMetadata.synthetic
+                ? 'This deterministic simulation tests a selected-device public view. It does not describe Storm King School electricity use.'
+                : `This view reports only the monitored coverage supplied by ${providerMetadata.sourceLabel}.`}
+          </p>
+        </div>
+        <dl className="hero-facts energy-coverage-facts">
+          <div><dt>Coverage</dt><dd>{providerMetadata.coverage.label}</dd></div>
+          <div><dt>Devices</dt><dd>{providerMetadata.coverage.monitoredDeviceCount ?? 'Not supplied'}</dd></div>
+          <div><dt>Freshness</dt><dd>{providerMetadata.synthetic ? 'Simulation · not live' : freshnessLabel(providerMetadata.freshness.state)}</dd></div>
+        </dl>
       </section>
 
-      <div className="exact-source-banner">{providerMetadata.disclosure}</div>
-      <PrototypeNotice compact metadata={providerMetadata} />
+      <PrototypeNotice
+        detailsHref="#energy-data-notes"
+        heading={providerMetadata.synthetic ? 'Public prototype' : undefined}
+        message={providerMetadata.synthetic ? 'Readings are simulated selected-device values, not school performance.' : undefined}
+        metadata={providerMetadata}
+      />
 
-      <section className="section-pad current-energy-section" aria-labelledby="current-energy-heading">
-        <div className="section-intro split-intro">
-          <div><p className="eyebrow"><span /> Monitored energy</p><h2 id="current-energy-heading">A visible signal,<br /><em>built for questions.</em></h2></div>
-          <p>{providerMetadata.coverage.note} {providerMetadata.synthetic ? 'Each reading is deterministic mock data and does not describe actual school consumption.' : `Readings use the update time and quality status supplied by ${providerMetadata.sourceLabel}.`}</p>
-        </div>
-        <div className="coverage-panel" role="note">
-          <div><span>What this covers</span><strong>{providerMetadata.coverage.label}</strong></div>
-          <div><span>Monitored devices</span><strong>{providerMetadata.coverage.monitoredDeviceCount ?? 'Not supplied'}</strong></div>
-          <div><span>Freshness</span><strong>{providerMetadata.synthetic ? 'Simulation · not live' : freshnessLabel(providerMetadata.freshness.state)}</strong></div>
-          <p>Monitored smart-plug load is not presented as total campus electricity unless the source explicitly confirms campus-wide coverage.</p>
-        </div>
-        <div className="metric-grid">
-          {metrics.map((metric, index) => (
-            <article className="metric-card" key={metric.label}>
-              <div><span>0{index + 1}</span><DataQualityBadge quality={metric.quality} /></div>
-              <h3>{metric.label}</h3>
-              <strong>{metric.value ?? 'Awaiting data'} {metric.value === null ? null : <small>{metric.unit}</small>}</strong>
-              <p>{metric.note}</p>
-            </article>
-          ))}
-        </div>
-      </section>
+      <section className="report-section energy-current-section" aria-labelledby="energy-current-heading">
+        <header className="section-heading">
+          <h2 id="energy-current-heading">Current monitored view</h2>
+          <p>{providerMetadata.coverage.note} Missing values remain unavailable rather than becoming zero.</p>
+        </header>
 
-      <section className="energy-charts section-pad" aria-labelledby="energy-charts-heading">
-        <div className="section-intro split-intro light-intro">
-          <div><p className="eyebrow"><span /> Usage patterns</p><h2 id="energy-charts-heading">From one day<br />to <em>one week.</em></h2></div>
-          <p>Charts include accessible text tables and a defined empty state so a missing future feed does not turn into a misleading zero.</p>
-        </div>
-        <div className="charts-grid">
+        <div className="energy-metric-list">
           <article>
-            <div className="chart-title"><div><span>24-hour monitored usage</span><h3>Hourly monitored power</h3></div><small>{providerMetadata.synthetic ? 'Simulated' : 'Reported'} · kW</small></div>
-            <DataBarChart points={hourly.map((point) => ({ label: point.label, value: point.value }))} title="24-hour usage chart" unit="kW" sparseLabels tone="lime" isSynthetic={providerMetadata.synthetic} />
+            <div>
+              <h3>Current monitored power</h3>
+              <DataQualityBadge quality={energyMetricQuality(snapshot.currentPowerKw, snapshot.quality)} />
+            </div>
+            <strong>{formatMetric(snapshot.currentPowerKw, 'kW')}</strong>
+            <p>Rate of electricity use across the selected monitored coverage.</p>
           </article>
           <article>
-            <div className="chart-title"><div><span>7-day monitored usage</span><h3>Daily monitored energy</h3></div><small>{providerMetadata.synthetic ? 'Simulated' : 'Reported'} · kWh</small></div>
-            <DataBarChart points={weekly.map((point) => ({ label: point.label, value: point.value }))} title="7-day usage chart" unit="kWh" tone="lime" isSynthetic={providerMetadata.synthetic} />
+            <div>
+              <h3>Today’s monitored energy</h3>
+              <DataQualityBadge quality={energyMetricQuality(snapshot.energyTodayKwh, snapshot.quality)} />
+            </div>
+            <strong>{formatMetric(snapshot.energyTodayKwh, 'kWh')}</strong>
+            <p>Electricity accumulated today across the selected monitored coverage.</p>
           </article>
         </div>
+        <p className="energy-updated">{hasSnapshot ? `Last ${providerMetadata.synthetic ? 'mock ' : ''}update: ${formatTimestamp(snapshot.lastUpdatedAt)}` : 'No current reading is available.'}</p>
       </section>
 
-      <section className="integration-section section-pad">
-        <div><p className="eyebrow"><span /> How to read this</p><h2>{providerMetadata.synthetic ? <>A preview with limits.<br /><em>Not a campus total.</em></> : <>Source and coverage.<br /><em>Kept in view.</em></>}</h2></div>
-        <div className="integration-details">
-          <p>Power in kW describes the rate of monitored electricity use. Energy in kWh describes how much monitored electricity accumulated over time. Neither becomes a whole-campus result without confirmed campus-wide coverage.</p>
-          <dl><div><dt>Current source</dt><dd>{providerMetadata.sourceLabel}</dd></div><div><dt>Coverage</dt><dd>{providerMetadata.coverage.label}</dd></div></dl>
-          <small>{providerMetadata.disclosure}</small>
+      <section className="report-section energy-chart-section" aria-labelledby="energy-chart-heading">
+        <header className="section-heading compact-heading">
+          <h2 id="energy-chart-heading">Monitored usage over time</h2>
+          <div className="range-control" aria-label="Energy chart time range">
+            <Link aria-current={range === '24h' ? 'page' : undefined} href="/energy?range=24h" scroll={false}>24 hours</Link>
+            <Link aria-current={range === '7d' ? 'page' : undefined} href="/energy?range=7d" scroll={false}>7 days</Link>
+          </div>
+        </header>
+
+        <div className="chart-shell">
+          <div className="chart-title">
+            <div><span>{range === '24h' ? 'Hourly monitored power' : 'Daily monitored energy'}</span><h3>{range === '24h' ? 'Last 24 hours' : 'Last 7 days'}</h3></div>
+            <small>{providerMetadata.synthetic ? 'Simulated' : 'Reported'} · {historyUnit}</small>
+          </div>
+          <DataBarChart
+            isSynthetic={providerMetadata.synthetic}
+            points={history.map((point) => ({ label: point.label, value: point.value }))}
+            sparseLabels={range === '24h'}
+            title={range === '24h' ? '24-hour monitored power' : '7-day monitored energy'}
+            tone="forest"
+            unit={historyUnit}
+          />
         </div>
+        <dl className="chart-context">
+          <div><dt>Time range</dt><dd>{range === '24h' ? '24 hours' : '7 days'}</dd></div>
+          <div><dt>Timezone</dt><dd>America/New_York</dd></div>
+          <div><dt>Source</dt><dd>{providerMetadata.sourceLabel}</dd></div>
+        </dl>
+      </section>
+
+      <section className="report-section energy-reading-section" aria-labelledby="energy-reading-heading">
+        <header className="section-heading compact-heading">
+          <h2 id="energy-reading-heading">How to read the units</h2>
+          <p>Power in kW is a rate at a point in time. Energy in kWh is an amount accumulated over time. Neither represents the whole campus without confirmed campus-wide coverage.</p>
+        </header>
+      </section>
+
+      <section className="report-section notes-section" aria-label="Energy provenance">
+        <DataNotes id="energy-data-notes" metadata={providerMetadata} title="Energy data notes" />
       </section>
     </main>
   );

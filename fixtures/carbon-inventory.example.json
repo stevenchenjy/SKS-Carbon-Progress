@@ -7,7 +7,7 @@
     "updatedAt": "2026-08-22T12:00:00-04:00",
     "publicationStatus": "prototype",
     "methodologyVersion": "synthetic-example-v1",
-    "verificationReference": "https://example.invalid/synthetic-verification-evidence",
+    "verificationReference": null,
     "reportingPeriod": {
       "start": "2025-07-01",
       "end": "2026-06-30",
@@ -27,16 +27,16 @@
         "source": "Synthetic direct-source activity",
         "value": 100,
         "unit": "illustrative index",
-        "quality": "verified",
-        "note": "Synthetic verified-record edge case; not a school result"
+        "quality": "prototype",
+        "note": "Synthetic prototype record; not a school result"
       },
       {
         "scope": "Scope 2",
         "source": "Synthetic purchased-electricity activity",
         "value": 0,
         "unit": "illustrative index",
-        "quality": "estimated",
-        "note": "Synthetic estimated genuine-zero edge case"
+        "quality": "prototype",
+        "note": "Synthetic prototype genuine-zero edge case"
       },
       {
         "scope": "Scope 3",

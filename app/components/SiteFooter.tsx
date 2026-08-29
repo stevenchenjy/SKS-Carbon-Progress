@@ -3,29 +3,23 @@ import Link from 'next/link';
 export function SiteFooter() {
   return (
     <footer className="site-footer">
-      <div>
+      <div className="footer-intro">
         <Link className="brand footer-brand" href="/">
           <span className="brand-mark" aria-hidden="true">SKS</span>
-          <span><strong>Sustainability Progress</strong><small>Public prototype</small></span>
+          <span><strong>Sustainability Field Report</strong><small>Storm King School</small></span>
         </Link>
-        <p>A foundation for future sustainability transparency, campus learning, and carefully reviewed reporting.</p>
+        <p>Student work, documented with the context needed to understand it.</p>
       </div>
-      <div className="footer-links">
-        <span>Explore</span>
-        <Link href="/">Overview</Link>
-        <Link href="/start">START</Link>
-        <Link href="/carbon">Carbon Neutrality Plan</Link>
-        <Link href="/projects">Active projects</Link>
-        <Link href="/energy">Monitored energy preview</Link>
-      </div>
-      <div className="footer-note">
-        <span>Data status</span>
-        <strong>Source-aware</strong>
-        <p>Each public data view identifies its source, quality, and prototype status.</p>
-      </div>
+      <nav className="footer-links" aria-label="Footer navigation">
+        <Link href="/" prefetch={false}>Overview</Link>
+        <Link href="/start" prefetch={false}>START</Link>
+        <Link href="/carbon" prefetch={false}>Carbon plan</Link>
+        <Link href="/projects" prefetch={false}>Projects</Link>
+        <Link href="/energy" prefetch={false}>Energy preview</Link>
+      </nav>
       <div className="footer-bottom">
-        <span>Storm King School · Public prototype</span>
-        <span>Measure carefully. Explain clearly.</span>
+        <span>Public prototype · school results appear after review</span>
+        <span>Names, emails, private notes, and approval discussions stay outside this site.</span>
       </div>
     </footer>
   );

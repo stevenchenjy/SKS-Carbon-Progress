@@ -11,7 +11,16 @@ export async function siteContentResponse(providerFactory: () => SiteContentProv
       provider.getCarbonPlan(),
       provider.getMetadata(),
     ]);
-    return { data: { overview, start, carbonPlan }, meta };
+    const publicStart = {
+      introduction: start.introduction,
+      adoptionRationale: start.adoptionRationale,
+      adoptionStatus: start.adoptionStatus,
+      adoptionDate: start.adoptionDate,
+      workflow: start.workflow,
+      privacyBoundary: start.privacyBoundary,
+      snapshotCadence: start.snapshotCadence,
+    };
+    return { data: { overview, start: publicStart, carbonPlan }, meta };
   });
 }
 

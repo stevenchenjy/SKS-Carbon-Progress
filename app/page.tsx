@@ -1,7 +1,11 @@
 import Link from 'next/link';
-import { DataQualityBadge } from '@/app/components/DataQualityBadge';
+import Image from 'next/image';
+import { DataNotes } from '@/app/components/DataNotes';
+import { OverviewWorkflowList } from '@/app/components/OverviewWorkflowList';
 import { PrototypeNotice } from '@/app/components/PrototypeNotice';
-import { unavailableMetadata } from '@/lib/provider-metadata';
+import { getProjectProvider } from '@/lib/projects/server';
+import type { PublicProject, PublicProjectMetric } from '@/lib/projects/types';
+import { unavailableMetadata, type ProviderMetadata } from '@/lib/provider-metadata';
 import { getSiteContentProvider } from '@/lib/site-content/server';
 import type {
   CarbonNeutralityPlanContent,
@@ -62,6 +66,58 @@ function sourceName(value: string): string {
   }
 }
 
+function formatMetric(metric: PublicProjectMetric | undefined): string {
+  if (!metric || metric.value === null) return 'Result pending reviewed evidence';
+  const value = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(metric.value);
+  const amount = metric.unit === 'USD' ? `$${value}` : `${value} ${metric.unit}`;
+  const period = metric.periodStart && metric.periodEnd ? `${metric.periodStart}–${metric.periodEnd}` : 'period not supplied';
+  return `${amount} · ${period}`;
+}
+
+function projectAction(project: PublicProject, metadata: ProviderMetadata): string {
+  if (metadata.synthetic && project.id === 'clynk-container-collection') {
+    return 'Container collection with a reporting period and count awaiting an approved account report.';
+  }
+  if (metadata.synthetic && project.id === 'campus-composting') {
+    return 'Food-scrap diversion with the weighing method and current result pending review.';
+  }
+  return project.summary;
+}
+
+export function projectRecordSummary(projects: PublicProject[], metadata: ProviderMetadata): string {
+  if (metadata.availability === 'unavailable') return 'Source unavailable';
+  if (projects.length === 0) return 'No public records';
+  return metadata.synthetic
+    ? `${projects.length} named records · results pending`
+    : `${projects.length} public records · see source notes`;
+}
+
+export function workSectionSummary(projects: PublicProject[], metadata: ProviderMetadata): string {
+  if (metadata.availability === 'unavailable') {
+    return 'The START workflow remains visible. The selected project source is unavailable, so no project record has been substituted.';
+  }
+  if (projects.length === 0) {
+    return 'The START workflow is visible. The connected project source currently contains no public-safe project records.';
+  }
+  const visibleParts = Math.min(projects.length, 2) + 1;
+  const count = visibleParts === 3 ? 'Three' : visibleParts === 2 ? 'Two' : 'One';
+  return `${count} parts of the reporting system are visible now. A status is not a result; evidence appears only after review.`;
+}
+
+function startSnapshotSummary(start: StartContent, metadata: ProviderMetadata): string {
+  if (metadata.availability === 'unavailable') return 'Source unavailable';
+  return start.adoptionStatus === 'confirmed'
+    ? 'Adoption confirmed · snapshot pending'
+    : 'Working purpose · snapshot pending';
+}
+
+function carbonProgressSummary(plan: CarbonNeutralityPlanContent, metadata: ProviderMetadata): string {
+  if (metadata.availability === 'unavailable') return 'Source unavailable';
+  return plan.progressPercent === null
+    ? 'No approved percentage published'
+    : `${plan.progressPercent}% reported`;
+}
+
 async function loadSiteContent() {
   try {
     const provider = getSiteContentProvider();
@@ -85,176 +141,151 @@ async function loadSiteContent() {
   }
 }
 
-export default async function Home() {
-  const { overview, start, carbonPlan, metadata } = await loadSiteContent();
+async function loadProjectContent(): Promise<{ projects: PublicProject[]; metadata: ProviderMetadata }> {
+  try {
+    const provider = getProjectProvider();
+    const [projects, metadata] = await Promise.all([
+      provider.getPublicProjects(),
+      provider.getMetadata(),
+    ]);
+    return { projects, metadata };
+  } catch {
+    return {
+      projects: [],
+      metadata: unavailableMetadata(
+        'Project data',
+        'The selected public project source could not be loaded. No replacement result has been inferred.',
+      ),
+    };
+  }
+}
 
-  const areas = [
-    {
-      index: '01',
-      title: 'START',
-      description: 'A working coordination system for projects, evidence, review, and public-ready updates.',
-      href: '/start',
-      status: start.adoptionStatus === 'confirmed' ? 'Adoption confirmed' : 'Purpose drafted',
-    },
-    {
-      index: '02',
-      title: 'Carbon Neutrality Plan',
-      description: 'The proposed framework for defining, measuring, reducing, and transparently reporting emissions.',
-      href: '/carbon',
-      status: carbonPlan.status,
-    },
-    {
-      index: '03',
-      title: 'Projects',
-      description: 'Active work such as CLYNK and composting, with outcome fields ready for reviewed evidence.',
-      href: '/projects',
-      status: 'Metrics pending',
-    },
-  ];
+export default async function Home() {
+  const [siteContent, projectContent] = await Promise.all([
+    loadSiteContent(),
+    loadProjectContent(),
+  ]);
+  const { overview, start, carbonPlan, metadata } = siteContent;
+  const { projects, metadata: projectMetadata } = projectContent;
 
   return (
     <main id="main-content">
-      <section className="hero-shell overview-hero-shell">
-        <div className="hero-copy">
-          <p className="eyebrow"><span /> Student-initiated · school-wide</p>
-          <h1 aria-label="Sustainability, student-led and school-wide.">Sustainability,<br /><em>student-led</em> and school-wide.</h1>
-          <p className="hero-intro">
-            Students initiate ideas and turn campus questions into projects.
-            Faculty, staff, operations, families, and partners help carry that work
-            across the school and connect it to carefully reviewed evidence.
+      <section className="field-hero">
+        <div className="field-hero-copy">
+          <h1>Student work, measured carefully.</h1>
+          <p className="field-hero-lead">
+            Students are building the system, projects, and evidence Storm King needs
+            to report sustainability work clearly.
           </p>
-          <div className="stage-line">
-            <span>Current stage</span>
-            <strong>Turning student ideas into measurable action</strong>
-            <DataQualityBadge quality={metadata.status} />
-          </div>
-          <div className="hero-actions">
-            <Link className="primary-button" href="/start">Understand START <span>↗</span></Link>
-            <Link className="text-link" href="/carbon">Explore the carbon framework <span>→</span></Link>
-          </div>
+          <Link className="primary-button" href="/projects">See the projects <span aria-hidden="true">→</span></Link>
         </div>
-
-        <aside className="progress-card" aria-label="Public reporting readiness">
-          <div className="card-topline">
-            <span>Public reporting readiness</span>
-            <span className="quality-dot">{carbonPlan.status}</span>
-          </div>
-          <div className="progress-visual">
-            <div className="progress-ring readiness-ring" role="img" aria-label="Define and approve the baseline before publishing progress">
-              <div><strong>Define</strong><span>measure · review</span></div>
-            </div>
-          </div>
-          <p>
-            An emissions-reduction percentage will appear only after Storm King
-            approves a goal, baseline, reporting boundary, target, and calculation method.
-          </p>
-          <div className="card-footer"><span>Place</span><i /><span>System</span><i /><span>Action</span></div>
-        </aside>
+        <div className="field-hero-art" aria-hidden="true">
+          <Image
+            alt=""
+            height="993"
+            fetchPriority="high"
+            sizes="(max-width: 760px) 100vw, 54vw"
+            src="/images/topographic-field.webp"
+            width="1584"
+          />
+        </div>
       </section>
 
-      <PrototypeNotice metadata={metadata} />
+      <PrototypeNotice
+        detailsHref="#home-content-notes"
+        heading={metadata.synthetic ? 'Public prototype' : undefined}
+        message={metadata.synthetic ? 'School results appear after review.' : undefined}
+        metadata={metadata}
+      />
 
-      <section className="definition-section section-pad" id="overview" aria-labelledby="overview-heading">
-        <div className="section-intro split-intro">
-          <div>
-            <p className="eyebrow"><span /> 01 / Overview</p>
-            <h2 id="overview-heading">Care for today.<br /><em>Keep choices open.</em></h2>
-          </div>
+      <section className="report-section work-section" aria-labelledby="work-heading">
+        <header className="section-heading">
+          <h2 id="work-heading">What students have built</h2>
+          <p>{workSectionSummary(projects, projectMetadata)}</p>
+        </header>
+
+        <div className="work-list">
+          <article className="work-row">
+            <div className="work-index">01</div>
+            <div>
+              <p className="work-type">Coordination system</p>
+              <h3>START Command Center</h3>
+            </div>
+            <p>A shared workflow for moving student ideas through ownership, evidence, school review, and public release.</p>
+            <div className="work-status">
+              <span>{metadata.availability === 'unavailable' ? 'Unavailable' : start.adoptionStatus === 'confirmed' ? 'Confirmed' : 'Working purpose'}</span>
+              <strong>{metadata.availability === 'unavailable' ? 'Source not connected' : 'Public snapshot pending'}</strong>
+            </div>
+            <Link href="/start" aria-label="Read about the START Command Center">Read <span aria-hidden="true">→</span></Link>
+          </article>
+
+          {projects.slice(0, 2).map((project, index) => (
+            <article className="work-row" key={project.id}>
+              <div className="work-index">{String(index + 2).padStart(2, '0')}</div>
+              <div>
+                <p className="work-type">{project.category}</p>
+                <h3>{project.title}</h3>
+              </div>
+              <p>{projectAction(project, projectMetadata)}</p>
+              <div className="work-status"><span>{project.status}</span><strong>{formatMetric(project.metrics[0])}</strong></div>
+              <Link href={`/projects#${project.id}`} aria-label={`Read the ${project.title} case study`}>Read <span aria-hidden="true">→</span></Link>
+            </article>
+          ))}
+
+          {projects.length === 0 ? (
+            <div className="content-empty" role="status">
+              <strong>{projectMetadata.availability === 'unavailable' ? 'Project records unavailable' : 'No public project records'}</strong>
+              <p>{projectMetadata.availability === 'unavailable' ? 'No project names or results have been substituted.' : 'The connected source currently contains no public-safe project records.'}</p>
+            </div>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="report-section process-section" aria-labelledby="process-heading">
+        <header className="section-heading compact-heading">
+          <h2 id="process-heading">How work becomes public</h2>
+          <p>The field report keeps action and evidence in sequence.</p>
+        </header>
+        {start.workflow.length > 0 ? (
+          <OverviewWorkflowList steps={start.workflow} />
+        ) : (
+          <div className="content-empty" role="status"><strong>Public workflow unavailable</strong><p>No replacement process has been inferred.</p></div>
+        )}
+      </section>
+
+      <section className="report-section public-state-section" aria-labelledby="public-state-heading">
+        <header className="section-heading compact-heading">
+          <h2 id="public-state-heading">What is public now</h2>
+          <p>Unavailable does not mean zero. It means the named source, period, method, or review is not yet connected.</p>
+        </header>
+        <dl className="public-state-list">
+          <div><dt>Project records</dt><dd>{projectRecordSummary(projects, projectMetadata)}</dd></div>
+          <div><dt>START snapshot</dt><dd>{startSnapshotSummary(start, metadata)}</dd></div>
+          <div><dt>Carbon progress</dt><dd>{carbonProgressSummary(carbonPlan, metadata)}</dd></div>
+        </dl>
+        <Link className="text-link" href="/projects">Read the project case studies <span aria-hidden="true">→</span></Link>
+      </section>
+
+      <section className="report-section place-section" aria-labelledby="place-heading">
+        <div>
+          <h2 id="place-heading">Why this place matters</h2>
           <p>{overview.sustainabilityDefinition}</p>
         </div>
-
-        <div className="place-panel">
-          <span>Why this place matters</span>
+        <div>
           <p>{overview.placeContext}</p>
           {overview.sourceReferences.length > 0 ? (
             <div className="source-links" aria-label="Overview sources">
               {overview.sourceReferences.map((reference) => (
-                <a href={reference} key={reference} rel="noreferrer" target="_blank">
-                  {sourceName(reference)} <span>↗</span>
-                </a>
+                <a href={reference} key={reference} rel="noreferrer" target="_blank">{sourceName(reference)} <span aria-hidden="true">↗</span></a>
               ))}
             </div>
           ) : null}
         </div>
       </section>
 
-      <section className="four-areas-section section-pad" aria-labelledby="areas-heading">
-        <div className="section-intro areas-intro">
-          <div>
-            <p className="eyebrow"><span /> Three connected areas</p>
-            <h2 id="areas-heading">Follow the work.</h2>
-          </div>
-        </div>
-        <div className="area-link-grid three-area-grid">
-          {areas.map((area) => (
-            <Link href={area.href} key={area.index}>
-              <span className="area-index">{area.index}</span>
-              <small>{area.status}</small>
-              <h3>{area.title}</h3>
-              <p>{area.description}</p>
-              <strong>Explore <span>→</span></strong>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="participation-section section-pad" aria-labelledby="participation-heading">
-        <div className="section-intro split-intro">
-          <div><p className="eyebrow"><span /> Data preview</p><h2 id="participation-heading">See school-wide action<br /><em>through data.</em></h2></div>
-          <p>The charts show how a future public dashboard could connect student-led activity, evidence readiness, and participation across the school.</p>
-        </div>
-        <div className="illustrative-data-notice">
-          <strong>Illustrative dashboard model</strong>
-          <span>Example values only · not Storm King results</span>
-        </div>
-        <div className="data-graph-grid">
-          <figure className="data-graph-panel activity-graph">
-            <div className="data-graph-heading"><span>01 / Student project activity</span><strong>Momentum over time</strong></div>
-            <div className="activity-bars" role="img" aria-label="Illustrative monthly project activity rising and falling across six periods">
-              {[38, 56, 47, 72, 64, 88].map((value, index) => (
-                <div className="activity-bar-column" key={value + index}>
-                  <i style={{ height: `${value}%` }} />
-                  <small>{['P1', 'P2', 'P3', 'P4', 'P5', 'P6'][index]}</small>
-                </div>
-              ))}
-            </div>
-            <figcaption>Example signal: ideas, milestones, and evidence updates by period</figcaption>
-          </figure>
-
-          <figure className="data-graph-panel readiness-graph">
-            <div className="data-graph-heading"><span>02 / Evidence readiness</span><strong>From activity to proof</strong></div>
-            <div className="readiness-bars">
-              {[
-                ['Project records', 82],
-                ['Measured outcomes', 61],
-                ['Reviewed evidence', 43],
-              ].map(([label, value]) => (
-                <div className="readiness-row" key={label}>
-                  <span>{label}</span>
-                  <div><i style={{ width: `${value}%` }} /></div>
-                  <small>{value}%</small>
-                </div>
-              ))}
-            </div>
-            <figcaption>Example values show how data quality could become visible</figcaption>
-          </figure>
-
-          <figure className="data-graph-panel reach-graph">
-            <div className="data-graph-heading"><span>03 / School-wide reach</span><strong>Students at the center</strong></div>
-            <div className="reach-visual">
-              <div className="reach-ring" role="img" aria-label="Illustrative participation model led by students and supported across the school">
-                <div><strong>Student-led</strong><span>school-wide support</span></div>
-              </div>
-              <ul>
-                <li><i className="student-swatch" /><span>Students</span><strong>50%</strong></li>
-                <li><i className="faculty-swatch" /><span>Faculty</span><strong>25%</strong></li>
-                <li><i className="operations-swatch" /><span>Operations</span><strong>15%</strong></li>
-                <li><i className="partner-swatch" /><span>Partners</span><strong>10%</strong></li>
-              </ul>
-            </div>
-            <figcaption>Example participation mix—not a measured headcount</figcaption>
-          </figure>
-        </div>
+      <section className="report-section notes-section" aria-label="Report provenance">
+        <DataNotes id="home-content-notes" metadata={metadata} title="Narrative data notes" />
+        <DataNotes id="home-project-notes" metadata={projectMetadata} title="Project data notes" />
       </section>
     </main>
   );

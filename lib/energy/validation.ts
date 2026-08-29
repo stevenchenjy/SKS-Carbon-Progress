@@ -38,6 +38,9 @@ export function validateEnergySnapshot(value: unknown, now = new Date()): Energy
     quality: quality(ctx, record.quality, 'snapshot.quality'),
     coverage: coverage(ctx, record.coverage, 'snapshot.coverage'),
   };
+  if (result.currentPowerKw === null && result.energyTodayKwh === null && !['pending', 'prototype'].includes(result.quality)) {
+    ctx.issues.push('snapshot.quality must be pending or prototype when all current energy readings are unavailable');
+  }
   rejectFutureTimestamp(ctx, result.lastUpdatedAt, 'snapshot.lastUpdatedAt', now);
   ctx.finish();
   return structuredClone(result);
@@ -53,13 +56,17 @@ export function validateEnergyPoints(value: unknown, expectedUnit: EnergyPoint['
     if (unit !== expectedUnit) ctx.issues.push(`${path}.unit must be ${expectedUnit} for this series`);
     const timestamp = ctx.isoTimestamp(record.timestamp, `${path}.timestamp`);
     rejectFutureTimestamp(ctx, timestamp, `${path}.timestamp`, now);
-    return {
+    const point = {
       timestamp,
       label: ctx.string(record.label, `${path}.label`) ?? '',
       value: ctx.number(record.value, `${path}.value`, { nullable: true, min: 0 }),
       unit,
       quality: quality(ctx, record.quality, `${path}.quality`),
     } satisfies EnergyPoint;
+    if (point.value === null && !['pending', 'prototype'].includes(point.quality)) {
+      ctx.issues.push(`${path}.quality must be pending or prototype when value is null`);
+    }
+    return point;
   });
   ctx.finish();
   return structuredClone(result);
@@ -74,6 +81,9 @@ export function validateEnergyImpact(value: unknown): EnergyImpact {
     comparisonMethod: ctx.string(record.comparisonMethod, 'impact.comparisonMethod') ?? '',
     quality: quality(ctx, record.quality, 'impact.quality'),
   };
+  if (result.avoidedEnergyKwh === null && !['pending', 'prototype'].includes(result.quality)) {
+    ctx.issues.push('impact.quality must be pending or prototype when avoidedEnergyKwh is null');
+  }
   ctx.finish();
   return structuredClone(result);
 }

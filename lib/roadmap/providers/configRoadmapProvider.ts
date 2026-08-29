@@ -36,9 +36,11 @@ export class ConfigRoadmapProvider implements RoadmapProvider {
       reportingPeriod: null,
       sourceType: 'configured-roadmap',
       verification: {
-        state: document.source.verificationReference ? 'verified' : 'not-verified',
-        reference: document.source.verificationReference,
-        note: document.source.verificationReference ? 'A public verification reference was supplied.' : 'No public verification reference was supplied.',
+        state: document.source.synthetic ? 'not-applicable' : document.source.verificationReference ? 'verified' : 'not-verified',
+        reference: document.source.synthetic ? null : document.source.verificationReference,
+        note: document.source.synthetic
+          ? 'Verification does not apply to prototype roadmap data.'
+          : document.source.verificationReference ? 'A public verification reference was supplied.' : 'No public verification reference was supplied.',
       },
       methodologyNote: `Roadmap methodology version ${document.source.methodologyVersion}.`,
     };

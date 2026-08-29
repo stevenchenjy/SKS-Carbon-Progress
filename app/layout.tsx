@@ -7,19 +7,19 @@ const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://sks-carbon-progr
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteOrigin),
-  title: 'SKS Sustainability Progress | Public Transparency',
-  description: 'A public prototype for sharing Storm King School’s sustainability purpose, coordination, carbon framework, projects, and learning.',
+  title: 'Storm King Sustainability Field Report',
+  description: 'Student sustainability work at Storm King School, documented with its status, source, method, and next evidence milestone.',
   openGraph: {
-    title: 'SKS Sustainability Progress',
-    description: 'Purpose, projects, evidence, and a transparent carbon framework — public prototype.',
+    title: 'Storm King Sustainability Field Report',
+    description: 'Student sustainability work, measured carefully and reported with context.',
     type: 'website',
-    images: [{ url: '/og.png', width: 1729, height: 910, alt: 'SKS Sustainability Progress — public prototype' }],
+    images: [{ url: '/images/topographic-field.webp', width: 1584, height: 993, alt: 'Topographic lines and a river form for Storm King School' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'SKS Sustainability Progress',
-    description: 'Purpose, projects, evidence, and a transparent carbon framework — public prototype.',
-    images: ['/og.png'],
+    title: 'Storm King Sustainability Field Report',
+    description: 'Student sustainability work, measured carefully and reported with context.',
+    images: ['/images/topographic-field.webp'],
   },
 };
 

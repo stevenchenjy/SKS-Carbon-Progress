@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 const links = [
   { href: '/', label: 'Overview' },
@@ -11,38 +11,30 @@ const links = [
 ];
 
 export function SiteHeader() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const closeMobileMenu = () => setIsMenuOpen(false);
+  const pathname = usePathname();
+
+  const isCurrent = (href: string) => href === '/' ? pathname === href : pathname.startsWith(href);
 
   return (
     <header className="site-header">
-      <Link className="brand" href="/" aria-label="SKS Sustainability Progress home">
+      <Link className="brand" href="/" aria-label="Storm King Sustainability Field Report home">
         <span className="brand-mark" aria-hidden="true">SKS</span>
         <span>
-          <strong>Sustainability Progress</strong>
+          <strong>Sustainability Field Report</strong>
           <small>Storm King School</small>
         </span>
       </Link>
       <nav className="desktop-nav" aria-label="Primary navigation">
-        {links.map((link) => <Link href={link.href} key={link.href}>{link.label}</Link>)}
+        {links.map((link) => <Link aria-current={isCurrent(link.href) ? 'page' : undefined} href={link.href} key={link.href}>{link.label}</Link>)}
       </nav>
-      <span className="prototype-pill">Public prototype</span>
-      <div className="mobile-menu">
-        <button
-          aria-controls="mobile-navigation"
-          aria-expanded={isMenuOpen}
-          className="mobile-menu-button"
-          onClick={() => setIsMenuOpen((open) => !open)}
-          type="button"
-        >
-          Menu
-        </button>
-        {isMenuOpen ? (
-          <nav aria-label="Mobile navigation" id="mobile-navigation">
-            {links.map((link) => <Link href={link.href} key={link.href} onClick={closeMobileMenu}>{link.label}</Link>)}
-          </nav>
-        ) : null}
-      </div>
+      <details className="mobile-menu" key={pathname}>
+        <summary className="mobile-menu-button">
+          <span>Menu</span><i aria-hidden="true" />
+        </summary>
+        <nav aria-label="Mobile navigation">
+          {links.map((link) => <Link aria-current={isCurrent(link.href) ? 'page' : undefined} href={link.href} key={link.href}>{link.label}</Link>)}
+        </nav>
+      </details>
     </header>
   );
 }

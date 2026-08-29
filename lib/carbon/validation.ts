@@ -1,7 +1,7 @@
 import type { CarbonHistoryPoint, CarbonMethodology, CarbonOverview, CarbonScopeSummary, CarbonTotals } from './types';
 import type { PublicationStatus, ReportingPeriodMetadata } from '../provider-metadata';
 import type { DataQuality } from '../data-quality';
-import { ValidationContext, isIsoDateOrderValid, isTimestampTooFarFuture } from '../validation/runtime.ts';
+import { ValidationContext, isIsoDateOrderValid, isTimestampTooFarFuture, normalizePublicHttpUrl } from '../validation/runtime.ts';
 
 const qualities = ['measured', 'estimated', 'verified', 'prototype', 'pending'] as const;
 const scopes = ['Scope 1', 'Scope 2', 'Scope 3'] as const;
@@ -162,10 +162,9 @@ function parseSource(ctx: ValidationContext, value: unknown, now: Date): CarbonI
     : ctx.string(record.verificationReference, 'source.verificationReference', { nullable: true });
   if (verificationReference !== null) {
     try {
-      const url = new URL(verificationReference);
-      if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new Error('Unsupported protocol');
+      normalizePublicHttpUrl(verificationReference);
     } catch {
-      ctx.issues.push('source.verificationReference must be an HTTP(S) URL or null');
+      ctx.issues.push('source.verificationReference must be a public HTTP(S) URL without credentials or null');
     }
   }
   const updatedAt = ctx.isoTimestamp(record.updatedAt, 'source.updatedAt');
@@ -206,6 +205,24 @@ export function validateCarbonInventoryDocument(value: unknown, now = new Date()
   }
   if (result.source.synthetic && result.methodology.dataQualityStatus !== 'prototype') {
     ctx.issues.push('methodology.dataQualityStatus must be prototype for a synthetic carbon document');
+  }
+  if (result.source.synthetic && result.source.verificationReference !== null) {
+    ctx.issues.push('source.verificationReference must be null for a synthetic carbon document');
+  }
+  if (result.source.synthetic) {
+    for (const scope of result.overview.scopeBreakdown) {
+      if (scope.quality !== 'prototype' && scope.quality !== 'pending') {
+        ctx.issues.push(`${scope.scope} quality must be prototype or pending for a synthetic carbon document`);
+      }
+    }
+    for (const point of result.history) {
+      if (point.quality !== 'prototype' && point.quality !== 'pending') {
+        ctx.issues.push(`history quality for ${point.year} must be prototype or pending for a synthetic carbon document`);
+      }
+    }
+  }
+  if (!result.source.synthetic && result.source.publicationStatus !== 'reported') {
+    ctx.issues.push('non-synthetic carbon documents must be reported before they cross the public provider boundary');
   }
   if (!result.source.synthetic && qualities.includes('prototype')) {
     ctx.issues.push('non-synthetic carbon documents cannot contain prototype quality records');

@@ -6,8 +6,8 @@ const metadata: ProviderMetadata = {
   synthetic: true,
   status: 'prototype',
   provider: 'mock-public-projects',
-  sourceLabel: 'School-provided project names with placeholder metrics',
-  disclosure: 'CLYNK and composting were identified by the user as active projects. Their counts, weights, carbon estimates, dates, and evidence remain unavailable placeholders.',
+  sourceLabel: 'Local public project prototype',
+  disclosure: 'The local fixture contains two named prototype project records. Their counts, weights, carbon estimates, dates, and evidence remain unavailable until school review.',
   availability: 'partial',
   publicationStatus: 'prototype',
   freshness: { state: 'not-applicable', observedAt: '2026-08-14', staleAfterMinutes: null },
@@ -20,7 +20,7 @@ const metadata: ProviderMetadata = {
   reportingPeriod: null,
   sourceType: 'synthetic',
   verification: { state: 'not-applicable', reference: null, note: 'Placeholder project metrics are not verified results.' },
-  methodologyNote: 'Project names are user-supplied; public measurements remain pending.',
+  methodologyNote: 'Names and status labels come from the local prototype fixture; public measurements remain pending school review.',
 };
 
 const mockProjects: PublicProject[] = [

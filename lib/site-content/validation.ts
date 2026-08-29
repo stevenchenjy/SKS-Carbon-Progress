@@ -7,7 +7,7 @@ import type {
   StartContent,
   SustainabilityOverviewContent,
 } from '@/lib/site-content/types';
-import { ValidationContext, isIsoDateOrderValid, isTimestampTooFarFuture } from '@/lib/validation/runtime';
+import { ValidationContext, isIsoDateOrderValid, isTimestampTooFarFuture, normalizePublicHttpUrl } from '@/lib/validation/runtime';
 
 const qualities = ['measured', 'estimated', 'verified', 'prototype', 'pending'] as const;
 const publicationStatuses = ['prototype', 'draft', 'reported'] as const;
@@ -36,11 +36,9 @@ function parseQuality(ctx: ValidationContext, value: unknown, path: string): Dat
 
 function httpUrl(ctx: ValidationContext, value: string, path: string): string {
   try {
-    const url = new URL(value);
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') throw new Error('Unsupported protocol');
-    return url.toString();
+    return normalizePublicHttpUrl(value);
   } catch {
-    ctx.issues.push(`${path} must be an HTTP(S) URL`);
+    ctx.issues.push(`${path} must be a public HTTP(S) URL without credentials`);
     return value;
   }
 }
@@ -137,6 +135,7 @@ function parseCarbonPlan(ctx: ValidationContext, value: unknown, syntheticSource
   const offsetsEvidenceReference = offsetsEvidenceReferenceRaw === null ? null : httpUrl(ctx, offsetsEvidenceReferenceRaw, 'carbonPlan.offsetsEvidenceReference');
   const updatedAt = nullableIsoDate(ctx, record.updatedAt, 'carbonPlan.updatedAt');
   const quality = parseQuality(ctx, record.quality, 'carbonPlan.quality');
+  const status = ctx.enum(record.status, planStatuses, 'carbonPlan.status');
 
   if (goal === null && targetYear !== null) ctx.issues.push('carbonPlan.targetYear requires an approved goal');
   if (goal !== null && (targetYear === null || baselineYear === null || inventoryBoundary === null)) {
@@ -166,8 +165,37 @@ function parseCarbonPlan(ctx: ValidationContext, value: unknown, syntheticSource
   if (retiredOffsets !== null && (offsetsMethod === null || offsetsEvidenceReference === null || updatedAt === null)) {
     ctx.issues.push('carbonPlan.retiredOffsetsTco2e requires a method, public retirement evidence, and update date');
   }
-  if (syntheticSource && (progressPercent !== null || retiredOffsets !== null)) {
-    ctx.issues.push('synthetic site content cannot publish a carbon progress percentage or retired offset quantity');
+  if (syntheticSource) {
+    const syntheticClaimFields: ReadonlyArray<readonly [string, string | number | null]> = [
+      ['goal', goal],
+      ['targetYear', targetYear],
+      ['baselineYear', baselineYear],
+      ['latestReportingYear', latestReportingYear],
+      ['inventoryBoundary', inventoryBoundary],
+      ['baselineGrossEmissionsTco2e', baselineGross],
+      ['latestGrossEmissionsTco2e', latestGross],
+      ['targetGrossEmissionsTco2e', targetGross],
+      ['progressPercent', progressPercent],
+      ['progressMetric', progressMetric],
+      ['progressMethod', progressMethod],
+      ['retiredOffsetsTco2e', retiredOffsets],
+      ['offsetsMethod', offsetsMethod],
+      ['offsetsEvidenceReference', offsetsEvidenceReference],
+      ['updatedAt', updatedAt],
+    ];
+    const populatedClaimFields = syntheticClaimFields
+      .filter(([, fieldValue]) => fieldValue !== null)
+      .map(([fieldName]) => fieldName);
+
+    if (populatedClaimFields.length > 0) {
+      ctx.issues.push(`synthetic site content carbonPlan decision and result fields must be null: ${populatedClaimFields.join(', ')}`);
+    }
+    if (status !== 'Framework') {
+      ctx.issues.push('synthetic site content carbonPlan.status must be Framework');
+    }
+    if (quality !== 'pending' && quality !== 'prototype') {
+      ctx.issues.push('synthetic site content carbonPlan.quality must be pending or prototype');
+    }
   }
   if (!syntheticSource && quality === 'prototype') ctx.issues.push('carbonPlan.quality cannot be prototype for a non-synthetic source');
   if (quality === 'verified') ctx.issues.push('carbonPlan.quality cannot be verified in the version-1 site-content contract because it has no plan-verification evidence field');
@@ -191,7 +219,7 @@ function parseCarbonPlan(ctx: ValidationContext, value: unknown, syntheticSource
     retiredOffsetsTco2e: retiredOffsets,
     offsetsMethod,
     offsetsEvidenceReference,
-    status: ctx.enum(record.status, planStatuses, 'carbonPlan.status'),
+    status,
     updatedAt,
     quality,
     framework: parseFramework(ctx, record.framework),
@@ -217,6 +245,9 @@ export function validateSiteContentSnapshot(value: unknown, now = new Date()): S
   }
   if (!synthetic && (publicationStatus === 'prototype' || quality === 'prototype')) {
     ctx.issues.push('non-synthetic site content cannot use prototype publication or quality states');
+  }
+  if (!synthetic && publicationStatus !== 'reported') {
+    ctx.issues.push('non-synthetic site content must be reported before it crosses the public provider boundary');
   }
   if (quality === 'verified') ctx.issues.push('source.quality cannot be verified in the version-1 site-content contract because it has no source-verification evidence field');
 

@@ -6,6 +6,24 @@ import { validateSiteContentSnapshot } from '@/lib/site-content/validation';
 
 const fixture = JSON.parse(readFileSync('fixtures/site-content.example.json', 'utf8')) as unknown;
 
+const syntheticCarbonClaimCases: Array<[string, unknown]> = [
+  ['goal', 'Reach an emissions target.'],
+  ['targetYear', 2035],
+  ['baselineYear', 2025],
+  ['latestReportingYear', 2026],
+  ['inventoryBoundary', 'Campus operations'],
+  ['baselineGrossEmissionsTco2e', 100],
+  ['latestGrossEmissionsTco2e', 90],
+  ['targetGrossEmissionsTco2e', 40],
+  ['progressPercent', 10],
+  ['progressMetric', 'Target attainment'],
+  ['progressMethod', 'Comparable gross-emissions inventories'],
+  ['retiredOffsetsTco2e', 1],
+  ['offsetsMethod', 'Registry retirement'],
+  ['offsetsEvidenceReference', 'https://example.org/retirement-evidence'],
+  ['updatedAt', '2026-08-20'],
+];
+
 function reportedFixture() {
   const value = structuredClone(fixture) as {
     source: Record<string, unknown>;
@@ -49,6 +67,26 @@ describe('site-content snapshot boundary', () => {
     first.placeContext = 'Changed only in the test clone.';
     expect((await provider.getOverview()).placeContext).not.toBe(first.placeContext);
     expect(await provider.getMetadata()).toMatchObject({ sourceType: 'spreadsheet-snapshot', synthetic: true });
+  });
+
+  it.each(syntheticCarbonClaimCases)('rejects synthetic carbon-plan claim field %s', (field, value) => {
+    const snapshot = structuredClone(fixture) as { carbonPlan: Record<string, unknown> };
+    snapshot.carbonPlan[field] = value;
+    expect(() => validateSiteContentSnapshot(snapshot)).toThrow(/synthetic site content carbonPlan decision and result fields must be null/i);
+  });
+
+  it('allows only structural framework content and pending or prototype plan quality for a synthetic source', () => {
+    const structural = structuredClone(fixture) as { carbonPlan: Record<string, unknown> };
+    structural.carbonPlan.quality = 'prototype';
+    expect(validateSiteContentSnapshot(structural).carbonPlan).toMatchObject({ status: 'Framework', quality: 'prototype' });
+
+    const activeStatus = structuredClone(fixture) as { carbonPlan: Record<string, unknown> };
+    activeStatus.carbonPlan.status = 'Plan active';
+    expect(() => validateSiteContentSnapshot(activeStatus)).toThrow(/carbonPlan\.status must be Framework/i);
+
+    const measuredQuality = structuredClone(fixture) as { carbonPlan: Record<string, unknown> };
+    measuredQuality.carbonPlan.quality = 'measured';
+    expect(() => validateSiteContentSnapshot(measuredQuality)).toThrow(/carbonPlan\.quality must be pending or prototype/i);
   });
 
   it('rejects private fields and unsupported source URLs', () => {

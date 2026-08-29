@@ -131,8 +131,8 @@ describe('prototype API routes', () => {
     expect((await energyHistory.json() as { data: unknown[]; meta: ProviderMetadata }).data).toEqual([]);
     expect((await projects.json() as { data: unknown[] }).data).toEqual([]);
     expect((await roadmap.json() as { data: unknown[] }).data).toEqual([]);
-    const siteContentBody = await siteContent.json() as { data: { start: { owner: null }; carbonPlan: { progressPercent: null } } };
-    expect(siteContentBody.data.start.owner).toBeNull();
+    const siteContentBody = await siteContent.json() as { data: { start: Record<string, unknown>; carbonPlan: { progressPercent: null } } };
+    expect(siteContentBody.data.start).not.toHaveProperty('owner');
     expect(siteContentBody.data.carbonPlan.progressPercent).toBeNull();
     expect(energyLive.headers.get('Cache-Control')).toBe('no-store');
   });

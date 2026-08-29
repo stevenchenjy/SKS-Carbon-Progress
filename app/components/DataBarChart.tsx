@@ -1,5 +1,3 @@
-import { scaleLinear } from 'd3-scale';
-
 export interface DataBarPoint {
   label: string;
   value: number | null;
@@ -27,7 +25,7 @@ export function DataBarChart({ points, title, unit, sparseLabels = false, tone =
   }
 
   const maximum = Math.max(...presentValues, 1);
-  const heightScale = scaleLinear().domain([0, maximum]).range([0, 100]).clamp(true);
+  const heightScale = (value: number) => Math.min(100, Math.max(0, (value / maximum) * 100));
   const provenanceLabel = isSynthetic ? 'Synthetic prototype data' : 'Provider-supplied data';
   const valueLabel = isSynthetic ? 'simulated' : 'reported';
 

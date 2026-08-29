@@ -1,4 +1,5 @@
 import { ProviderError } from './errors';
+import { normalizePublicHttpUrl } from '../validation/runtime';
 
 export interface JsonSource {
   load(): Promise<unknown>;
@@ -24,11 +25,32 @@ export class HttpJsonSource implements JsonSource {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
     try {
-      const response = await this.fetcher(this.options.url, {
+      let requestUrl: string;
+      try {
+        const normalized = new URL(normalizePublicHttpUrl(this.options.url));
+        normalized.hash = '';
+        requestUrl = normalized.toString();
+      } catch (error) {
+        throw new ProviderError('PROVIDER_MISCONFIGURED', { cause: error });
+      }
+
+      const response = await this.fetcher(requestUrl, {
         headers: { Accept: 'application/json', ...this.options.headers },
         signal: controller.signal,
         cache: 'no-store',
+        redirect: 'error',
       });
+      if (response.url) {
+        let responseUrl: string;
+        try {
+          const normalized = new URL(normalizePublicHttpUrl(response.url));
+          normalized.hash = '';
+          responseUrl = normalized.toString();
+        } catch (error) {
+          throw new ProviderError('PROVIDER_UNAVAILABLE', { cause: error });
+        }
+        if (responseUrl !== requestUrl) throw new ProviderError('PROVIDER_UNAVAILABLE');
+      }
       if (!response.ok) throw new ProviderError('PROVIDER_UNAVAILABLE');
       try {
         return await response.json();

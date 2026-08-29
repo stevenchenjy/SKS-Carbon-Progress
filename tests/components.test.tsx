@@ -1,16 +1,23 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { DataBarChart } from '@/app/components/DataBarChart';
 import { CarbonScopeGrid } from '@/app/components/CarbonScopeGrid';
 import { CarbonTimeline } from '@/app/components/CarbonTimeline';
 import { CarbonPlanProgress } from '@/app/components/CarbonPlanProgress';
+import { DataNotes } from '@/app/components/DataNotes';
 import { DataQualityBadge } from '@/app/components/DataQualityBadge';
+import { OverviewWorkflowList } from '@/app/components/OverviewWorkflowList';
 import { ProjectGrid } from '@/app/components/ProjectGrid';
 import { PrototypeNotice } from '@/app/components/PrototypeNotice';
 import { RoadmapGrid } from '@/app/components/RoadmapGrid';
+import { SiteHeader } from '@/app/components/SiteHeader';
+import { StartWorkflowList } from '@/app/components/StartWorkflowList';
+import { energyMetricQuality } from '@/app/energy/metric-quality';
 import type { ProviderMetadata } from '@/lib/provider-metadata';
 import type { CarbonNeutralityPlanContent } from '@/lib/site-content/types';
 import { canClaimVerified, disclosureHeading, publicClaimVocabulary, verificationLabel } from '@/lib/claim-safety';
+
+vi.mock('next/navigation', () => ({ usePathname: () => '/projects' }));
 
 const prototypeMetadata: ProviderMetadata = {
   synthetic: true,
@@ -48,6 +55,45 @@ const pendingPlan: CarbonNeutralityPlanContent = {
 };
 
 describe('public data components', () => {
+  it('renders the mobile navigation as a native disclosure with active links', () => {
+    const { container } = render(<SiteHeader />);
+    const mobileMenu = container.querySelector('details.mobile-menu');
+
+    expect(mobileMenu).not.toBeNull();
+    expect(mobileMenu?.querySelector('summary')).toHaveTextContent('Menu');
+    expect(mobileMenu?.querySelector('button')).toBeNull();
+    expect(container.querySelectorAll('a[aria-current="page"]')).toHaveLength(2);
+  });
+
+  it('marks a missing energy metric pending without treating numeric zero as missing', () => {
+    expect(energyMetricQuality(null, 'measured')).toBe('pending');
+    expect(energyMetricQuality(0, 'measured')).toBe('measured');
+  });
+
+  it('uses the five-stage diagram only for five steps and a stable list for longer workflows', () => {
+    const steps = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];
+    const { container, rerender } = render(<StartWorkflowList steps={steps} />);
+    expect(screen.getAllByRole('listitem')).toHaveLength(6);
+    expect(container.querySelector('.workflow-variable-list')).not.toBeNull();
+    expect(container.querySelector('.workflow-step')).toBeNull();
+
+    rerender(<StartWorkflowList steps={steps.slice(0, 5)} />);
+    expect(container.querySelector('.workflow-list')).not.toBeNull();
+    expect(container.querySelectorAll('.workflow-step')).toHaveLength(5);
+  });
+
+  it('shows every overview workflow stage and switches longer flows to the stable layout', () => {
+    const steps = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];
+    const { container, rerender } = render(<OverviewWorkflowList steps={steps} />);
+    expect(screen.getAllByRole('listitem')).toHaveLength(6);
+    expect(screen.getByText('Six')).toBeInTheDocument();
+    expect(container.querySelector('.process-list-variable')).not.toBeNull();
+
+    rerender(<OverviewWorkflowList steps={steps.slice(0, 5)} />);
+    expect(container.querySelector('.process-list-variable')).toBeNull();
+    expect(container.querySelectorAll('.process-list > li')).toHaveLength(5);
+  });
+
   it('renders a clear empty chart state', () => {
     render(<DataBarChart points={[]} title="Empty usage" unit="kW" />);
     expect(screen.getByRole('status')).toHaveTextContent('No prototype readings to show');
@@ -65,7 +111,7 @@ describe('public data components', () => {
   it('renders non-color data-quality text and the prototype disclosure', () => {
     render(<><DataQualityBadge quality="verified" /><PrototypeNotice /></>);
     expect(screen.getByText('Verified')).toBeInTheDocument();
-    expect(screen.getByText('Prototype data only')).toBeInTheDocument();
+    expect(screen.getByText(/Prototype data only/)).toBeInTheDocument();
     expect(screen.getByText(/not Storm King School results/i)).toBeInTheDocument();
   });
 
@@ -98,6 +144,30 @@ describe('public data components', () => {
     expect(screen.getByRole('link', { name: /view verification evidence/i })).toHaveAttribute('href', 'https://example.invalid/project-evidence');
   });
 
+  it('never labels a synthetic project URL as verification evidence', () => {
+    render(
+      <ProjectGrid
+        metadata={prototypeMetadata}
+        projects={[{
+          id: 'synthetic-project',
+          title: 'Synthetic project',
+          category: 'Energy & Buildings',
+          status: 'Active',
+          summary: 'Test-only synthetic summary.',
+          milestone: { label: 'Pending milestone', stage: 'Active', target: 'Pending' },
+          impact: 'Expected benefit pending review',
+          impactQuality: 'pending',
+          metrics: [],
+          verificationReference: 'https://example.invalid/not-public-verification',
+          nextPublicStep: 'Review evidence',
+          updatedAt: '2026-08-22',
+          quality: 'prototype',
+        }]}
+      />,
+    );
+    expect(screen.queryByRole('link', { name: /view verification evidence/i })).not.toBeInTheDocument();
+  });
+
   it('keeps a missing carbon-plan percentage numeric-free and renders reviewed progress when supplied', () => {
     const { rerender } = render(<CarbonPlanProgress plan={pendingPlan} />);
     expect(screen.getByText('Not yet calculated')).toBeInTheDocument();
@@ -119,8 +189,16 @@ describe('public data components', () => {
       quality: 'measured',
     }} />);
     expect(screen.getByText('50%')).toBeInTheDocument();
-    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50');
+    expect(screen.getByLabelText('Latest approved progress result')).toHaveTextContent('50%');
+    expect(screen.getByLabelText('Latest approved progress result')).toHaveTextContent('Target attainment');
     expect(screen.getByText('Documented gross-emissions method.')).toBeInTheDocument();
+  });
+
+  it('does not leak fallback carbon-plan enum values when the source is unavailable', () => {
+    render(<CarbonPlanProgress available={false} plan={pendingPlan} />);
+    expect(screen.getByText('Plan status:')).toHaveTextContent('Unavailable');
+    expect(screen.queryByText('Framework')).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('No goal, baseline, target, boundary, method, or progress result has been inferred');
   });
 
   it('distinguishes project metric zero from missing and shows equivalency method evidence', () => {
@@ -160,8 +238,8 @@ describe('public data components', () => {
         quality: 'measured',
       }]}
     />);
-    expect(screen.getByText('0 containers')).toBeInTheDocument();
-    expect(screen.getByText('Awaiting reviewed data')).toBeInTheDocument();
+    expect(screen.getAllByText('0 containers').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Awaiting reviewed data').length).toBeGreaterThan(0);
     expect(screen.getByText(/EPA factor version used in test/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /factor source/i })).toHaveAttribute('href', 'https://example.invalid/factor');
   });
@@ -202,9 +280,13 @@ describe('public data components', () => {
   });
 
   it('shows source-level coverage and a non-live freshness label', () => {
-    render(<PrototypeNotice metadata={prototypeMetadata} />);
+    render(<DataNotes metadata={prototypeMetadata} />);
     expect(screen.getByText('Test coverage')).toBeInTheDocument();
     expect(screen.getByText('Not a live feed')).toBeInTheDocument();
+    expect(screen.getByText('Synthetic prototype')).toBeInTheDocument();
+    expect(screen.getByText('Synthetic fixture')).toBeInTheDocument();
+    expect(screen.getAllByText('Not supplied').length).toBeGreaterThan(0);
+    expect(screen.getByText('Aug 22, 2026')).toBeInTheDocument();
   });
 
   it('uses the reusable claim vocabulary and requires evidence before verified page language', () => {

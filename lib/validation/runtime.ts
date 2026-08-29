@@ -109,3 +109,102 @@ export function isTimestampTooFarFuture(value: string, now = new Date(), futureS
   const timestamp = Date.parse(value);
   return !Number.isNaN(timestamp) && timestamp > now.getTime() + futureSkewMinutes * 60_000;
 }
+
+function isNonPublicIpv4(hostname: string): boolean {
+  const parts = hostname.split('.');
+  if (parts.length !== 4 || parts.some((part) => !/^\d{1,3}$/.test(part))) return false;
+  const octets = parts.map(Number);
+  if (octets.some((octet) => octet < 0 || octet > 255)) return true;
+  const [first, second] = octets;
+  return first === 0
+    || first === 10
+    || first === 127
+    || (first === 100 && second >= 64 && second <= 127)
+    || (first === 169 && second === 254)
+    || (first === 172 && second >= 16 && second <= 31)
+    || (first === 192 && second === 0 && octets[2] === 0)
+    || (first === 192 && second === 0 && octets[2] === 2)
+    || (first === 192 && second === 168)
+    || (first === 198 && (second === 18 || second === 19))
+    || (first === 198 && second === 51 && octets[2] === 100)
+    || (first === 203 && second === 0 && octets[2] === 113)
+    || first >= 224;
+}
+
+function parseIpv6Hextets(hostname: string): number[] | null {
+  const normalized = hostname.replace(/^\[|\]$/g, '').toLowerCase();
+  if (!normalized.includes(':') || normalized.includes('%')) return null;
+
+  const compressionParts = normalized.split('::');
+  if (compressionParts.length > 2) return null;
+  const parsePart = (part: string): number[] | null => {
+    if (!part) return [];
+    const values = part.split(':');
+    if (values.some((value) => !/^[0-9a-f]{1,4}$/.test(value))) return null;
+    return values.map((value) => Number.parseInt(value, 16));
+  };
+
+  const left = parsePart(compressionParts[0]);
+  const right = parsePart(compressionParts[1] ?? '');
+  if (left === null || right === null) return null;
+  if (compressionParts.length === 1) return left.length === 8 ? left : null;
+
+  const omittedCount = 8 - left.length - right.length;
+  if (omittedCount < 1) return null;
+  return [...left, ...Array<number>(omittedCount).fill(0), ...right];
+}
+
+function isNonPublicIpv6(hostname: string): boolean {
+  if (!hostname.includes(':')) return false;
+  const hextets = parseIpv6Hextets(hostname);
+  if (hextets === null) return true;
+
+  const [first, second] = hextets;
+  const isIpv4Compatible = hextets.slice(0, 6).every((value) => value === 0);
+  const isIpv4Mapped = hextets.slice(0, 5).every((value) => value === 0) && hextets[5] === 0xffff;
+  const isGlobalUnicast = (first & 0xe000) === 0x2000;
+  const isDocumentation = first === 0x2001 && second === 0x0db8;
+  const isBenchmarking = first === 0x2001 && second === 0x0002 && hextets[2] === 0;
+  const isTeredo = first === 0x2001 && second === 0;
+  const isSixToFour = first === 0x2002;
+
+  return !isGlobalUnicast
+    || isIpv4Compatible
+    || isIpv4Mapped
+    || isDocumentation
+    || isBenchmarking
+    || isTeredo
+    || isSixToFour;
+}
+
+/**
+ * Normalizes a direct public HTTP(S) URL while rejecting common local-network
+ * and credential-bearing forms. This does not resolve DNS; callers must pair it
+ * with redirect blocking and deployment-level DNS/egress protections.
+ */
+export function normalizePublicHttpUrl(value: string): string {
+  const url = new URL(value);
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new Error('Unsupported protocol');
+  if (url.username || url.password) throw new Error('Credentials are not allowed');
+
+  const hostname = url.hostname.replace(/^\[|\]$/g, '').replace(/\.$/, '').toLowerCase();
+  if (!hostname
+    || hostname === 'localhost'
+    || hostname.endsWith('.localhost')
+    || hostname === 'local'
+    || hostname.endsWith('.local')
+    || isNonPublicIpv4(hostname)
+    || isNonPublicIpv6(hostname)) {
+    throw new Error('Local and non-public hosts are not allowed');
+  }
+  return url.toString();
+}
+
+export function isPublicHttpUrl(value: string): boolean {
+  try {
+    normalizePublicHttpUrl(value);
+    return true;
+  } catch {
+    return false;
+  }
+}

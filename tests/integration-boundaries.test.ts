@@ -48,12 +48,32 @@ describe('external data validation boundaries', () => {
     const normalized = validateCarbonInventoryDocument(carbonFixture);
     expect(normalized.overview.scopeBreakdown[1].value).toBe(0);
     expect(normalized.overview.scopeBreakdown[2].value).toBeNull();
-    expect(normalized.overview.scopeBreakdown.map((scope) => scope.quality)).toEqual(['verified', 'estimated', 'pending']);
+    expect(normalized.overview.scopeBreakdown.map((scope) => scope.quality)).toEqual(['prototype', 'prototype', 'pending']);
     expect(normalized.overview.totals).toBeNull();
 
     const provider = new CarbonInventoryProvider(source(carbonFixture));
     expect((await provider.getMetadata()).availability).toBe('partial');
     expect((await provider.getOverview()).reductionPercent).toBeNull();
+  });
+
+  it('rejects claim-bearing child quality or verification evidence in a synthetic carbon document', () => {
+    const measuredScope = structuredClone(carbonFixture) as {
+      overview: { scopeBreakdown: Array<{ quality: string }> };
+    };
+    measuredScope.overview.scopeBreakdown[0].quality = 'measured';
+    expect(() => validateCarbonInventoryDocument(measuredScope)).toThrow(/Scope 1 quality must be prototype or pending/i);
+
+    const estimatedHistory = structuredClone(carbonFixture) as {
+      history: Array<{ quality: string }>;
+    };
+    estimatedHistory.history[0].quality = 'estimated';
+    expect(() => validateCarbonInventoryDocument(estimatedHistory)).toThrow(/history quality for 2025 must be prototype or pending/i);
+
+    const verificationEvidence = structuredClone(carbonFixture) as {
+      source: { verificationReference: string | null };
+    };
+    verificationEvidence.source.verificationReference = 'https://example.org/synthetic-verification';
+    expect(() => validateCarbonInventoryDocument(verificationEvidence)).toThrow(/verificationReference must be null for a synthetic carbon document/i);
   });
 
   it('accepts explicit carbon accounting totals without calculating them and rejects unsupported net accounting', () => {
@@ -108,7 +128,15 @@ describe('external data validation boundaries', () => {
     const normalized = validateRoadmapConfigDocument(roadmapFixture);
     expect(normalized.areas[0]).toMatchObject({ target: null, progress: { percent: null, metricLabel: null } });
     const provider = new ConfigRoadmapProvider(source(roadmapFixture));
-    expect(await provider.getMetadata()).toMatchObject({ sourceType: 'configured-roadmap', synthetic: true });
+    expect(await provider.getMetadata()).toMatchObject({
+      sourceType: 'configured-roadmap',
+      synthetic: true,
+      verification: { state: 'not-applicable', reference: null },
+    });
+
+    const syntheticVerificationEvidence = structuredClone(roadmapFixture) as { source: { verificationReference: string | null } };
+    syntheticVerificationEvidence.source.verificationReference = 'https://example.org/synthetic-verification';
+    expect(() => validateRoadmapConfigDocument(syntheticVerificationEvidence)).toThrow(/verificationReference must be null for a synthetic roadmap document/i);
 
     const fakePrecision = structuredClone(roadmapFixture) as { areas: Array<{ progress: { percent: number | null; metricLabel: string | null } }> };
     fakePrecision.areas[0].progress.percent = 50;
@@ -137,6 +165,10 @@ describe('external data validation boundaries', () => {
     const unsupportedUpdateVerification = structuredClone(startFixture) as unknown as { publicProjects: Array<Record<string, unknown>> };
     unsupportedUpdateVerification.publicProjects[0].quality = 'verified';
     expect(() => validateStartPublicSnapshot(unsupportedUpdateVerification)).toThrow(/verificationReference/i);
+
+    const syntheticVerificationEvidence = structuredClone(startFixture) as unknown as { publicProjects: Array<Record<string, unknown>> };
+    syntheticVerificationEvidence.publicProjects[0].verificationReference = 'https://example.org/synthetic-verification';
+    expect(() => validateStartPublicSnapshot(syntheticVerificationEvidence)).toThrow(/verificationReference must be null for a synthetic snapshot/i);
 
     const mislabeledSyntheticSource = structuredClone(startFixture) as unknown as { source: Record<string, unknown> };
     mislabeledSyntheticSource.source.quality = 'verified';

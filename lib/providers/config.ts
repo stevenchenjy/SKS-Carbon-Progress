@@ -1,4 +1,5 @@
 import { ProviderError } from './errors.ts';
+import { normalizePublicHttpUrl } from '../validation/runtime.ts';
 
 export type CarbonProviderSelection = 'mock' | 'inventory';
 export type EnergyProviderSelection = 'mock' | 'revert';
@@ -34,11 +35,9 @@ export function requireHttpUrl(name: string, env: NodeJS.ProcessEnv = process.en
   const value = env[name]?.trim();
   if (!value) throw new ProviderError('PROVIDER_MISCONFIGURED', { detail: `${name} is required.` });
   try {
-    const url = new URL(value);
-    if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new Error('Unsupported protocol');
-    return url.toString();
+    return normalizePublicHttpUrl(value);
   } catch (error) {
-    throw new ProviderError('PROVIDER_MISCONFIGURED', { cause: error, detail: `${name} must be an HTTP(S) URL.` });
+    throw new ProviderError('PROVIDER_MISCONFIGURED', { cause: error, detail: `${name} must be a public HTTP(S) URL without credentials.` });
   }
 }
 

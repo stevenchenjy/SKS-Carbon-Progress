@@ -1,6 +1,6 @@
 import type { DataQuality } from '../data-quality';
 import type { PublicationStatus } from '../provider-metadata';
-import { ValidationContext, isIsoDateOrderValid, isTimestampTooFarFuture } from '../validation/runtime';
+import { ValidationContext, isIsoDateOrderValid, isTimestampTooFarFuture, normalizePublicHttpUrl } from '../validation/runtime';
 import type { ProjectMetricEquivalency, PublicProject, PublicProjectMetric, ProjectMilestone } from './types';
 
 const categories = ['Energy & Buildings', 'Waste & Circularity', 'Food Systems', 'Transportation', 'Education & Engagement'] as const;
@@ -9,6 +9,7 @@ const milestoneStages = ['Exploring', 'Planning', 'Active', 'Learning'] as const
 const qualities = ['measured', 'estimated', 'verified', 'prototype', 'pending'] as const;
 const publicationStatuses = ['prototype', 'draft', 'reported'] as const;
 const metricTypes = ['activity-count', 'mass-diverted', 'estimated-emissions-avoided', 'certified-offset-retired', 'funds-raised', 'other'] as const;
+const idSlugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export interface StartSnapshotSource {
   id: string;
@@ -29,6 +30,14 @@ function parseQuality(ctx: ValidationContext, value: unknown, path: string): Dat
   return ctx.enum(value, qualities, path);
 }
 
+function parseIdSlug(ctx: ValidationContext, value: unknown, path: string): string {
+  const id = ctx.string(value, path, { maxLength: 100 }) ?? '';
+  if (id !== '' && !idSlugPattern.test(id)) {
+    ctx.issues.push(`${path} must be a lowercase kebab-case slug`);
+  }
+  return id;
+}
+
 function optionalString(ctx: ValidationContext, value: unknown, path: string): string | null {
   if (value === null) return null;
   return ctx.string(value, path, { nullable: true });
@@ -42,11 +51,9 @@ function optionalIsoDate(ctx: ValidationContext, value: unknown, path: string): 
 function parseHttpUrl(ctx: ValidationContext, value: string | null, path: string): string | null {
   if (value === null) return null;
   try {
-    const url = new URL(value);
-    if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new Error('Unsupported protocol');
-    return url.toString();
+    return normalizePublicHttpUrl(value);
   } catch {
-    ctx.issues.push(`${path} must be an HTTP(S) URL or null`);
+    ctx.issues.push(`${path} must be a public HTTP(S) URL without credentials or null`);
     return value;
   }
 }
@@ -71,6 +78,7 @@ function parseMetric(ctx: ValidationContext, value: unknown, path: string, synth
     'id', 'label', 'metricType', 'value', 'unit', 'periodStart', 'periodEnd', 'quality',
     'sourceLabel', 'methodologyNote', 'evidenceReference', 'equivalencies',
   ], path);
+  const id = parseIdSlug(ctx, record.id, `${path}.id`);
   const metricType = ctx.enum(record.metricType, metricTypes, `${path}.metricType`);
   const metricValue = record.value === null ? null : ctx.number(record.value, `${path}.value`, { nullable: true, min: 0 });
   const quality = parseQuality(ctx, record.quality, `${path}.quality`);
@@ -102,7 +110,7 @@ function parseMetric(ctx: ValidationContext, value: unknown, path: string, synth
   if (syntheticSource && !['prototype', 'pending'].includes(quality)) ctx.issues.push(`${path}.quality must be prototype or pending for a synthetic snapshot`);
   if (!syntheticSource && quality === 'prototype') ctx.issues.push(`${path}.quality cannot be prototype for a non-synthetic snapshot`);
   return {
-    id: ctx.string(record.id, `${path}.id`) ?? '',
+    id,
     label: ctx.string(record.label, `${path}.label`) ?? '',
     metricType,
     value: metricValue,
@@ -133,6 +141,7 @@ function parseProject(ctx: ValidationContext, value: unknown, path: string, synt
     'id', 'title', 'category', 'status', 'summary', 'milestone', 'impact', 'impactQuality',
     'metrics', 'verificationReference', 'nextPublicStep', 'updatedAt', 'quality',
   ], path);
+  const id = parseIdSlug(ctx, record.id, `${path}.id`);
   const impact = optionalString(ctx, record.impact, `${path}.impact`);
   const impactQuality = parseQuality(ctx, record.impactQuality, `${path}.impactQuality`);
   const projectQuality = parseQuality(ctx, record.quality, `${path}.quality`);
@@ -145,11 +154,13 @@ function parseProject(ctx: ValidationContext, value: unknown, path: string, synt
   }
   if (verificationReference !== null) {
     try {
-      const url = new URL(verificationReference);
-      if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new Error('Unsupported protocol');
+      normalizePublicHttpUrl(verificationReference);
     } catch {
-      ctx.issues.push(`${path}.verificationReference must be an HTTP(S) URL or null`);
+      ctx.issues.push(`${path}.verificationReference must be a public HTTP(S) URL without credentials or null`);
     }
+  }
+  if (syntheticSource && verificationReference !== null) {
+    ctx.issues.push(`${path}.verificationReference must be null for a synthetic snapshot`);
   }
   if (!syntheticSource && impactQuality === 'prototype') {
     ctx.issues.push(`${path}.impactQuality cannot be prototype for a non-synthetic snapshot`);
@@ -171,7 +182,7 @@ function parseProject(ctx: ValidationContext, value: unknown, path: string, synt
     metricIds.add(metric.id);
   }
   return {
-    id: ctx.string(record.id, `${path}.id`) ?? '',
+    id,
     title: ctx.string(record.title, `${path}.title`) ?? '',
     category: ctx.enum(record.category, categories, `${path}.category`),
     status: ctx.enum(record.status, statuses, `${path}.status`),
@@ -200,6 +211,7 @@ export function validateStartPublicSnapshot(value: unknown, now = new Date()): S
   const publicationStatus = ctx.enum(sourceRecord.publicationStatus, publicationStatuses, 'source.publicationStatus');
   if (synthetic && publicationStatus !== 'prototype') ctx.issues.push('source.publicationStatus must be prototype when source.synthetic is true');
   if (!synthetic && publicationStatus === 'prototype') ctx.issues.push('source.publicationStatus cannot be prototype when source.synthetic is false');
+  if (!synthetic && publicationStatus !== 'reported') ctx.issues.push('non-synthetic START snapshots must be reported before they cross the public provider boundary');
   const generatedAt = ctx.isoTimestamp(sourceRecord.generatedAt, 'source.generatedAt');
   if (isTimestampTooFarFuture(generatedAt, now)) ctx.issues.push('source.generatedAt must not be more than 5 minutes in the future');
   const source: StartSnapshotSource = {

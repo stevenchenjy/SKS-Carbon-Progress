@@ -1,30 +1,20 @@
 import type { Metadata } from 'next';
-import { DataBarChart } from '@/app/components/DataBarChart';
-import { CarbonScopeGrid } from '@/app/components/CarbonScopeGrid';
-import { CarbonTimeline } from '@/app/components/CarbonTimeline';
 import { CarbonPlanProgress } from '@/app/components/CarbonPlanProgress';
+import { CarbonScopeGrid } from '@/app/components/CarbonScopeGrid';
+import { DataNotes } from '@/app/components/DataNotes';
 import { DataQualityBadge } from '@/app/components/DataQualityBadge';
-import { PrototypeNotice } from '@/app/components/PrototypeNotice';
 import { getCarbonProvider } from '@/lib/carbon/server';
-import { unavailableMetadata } from '@/lib/provider-metadata';
-import type { CarbonMethodology, CarbonOverview } from '@/lib/carbon/types';
-import { dataQualityDescription } from '@/lib/claim-safety';
+import type { CarbonMethodology, CarbonOverview, CarbonTotals } from '@/lib/carbon/types';
+import { unavailableMetadata, type ProviderMetadata } from '@/lib/provider-metadata';
 import { getSiteContentProvider } from '@/lib/site-content/server';
 import type { CarbonNeutralityPlanContent } from '@/lib/site-content/types';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Carbon Neutrality Framework | SKS Sustainability Progress',
-  description: 'Explore the proposed carbon-neutrality framework, progress requirements, inventory boundary, and future data-quality approach.',
+  title: 'Carbon planning | Storm King Sustainability Field Report',
+  description: 'See the decisions, inventory boundary, and reporting method required for a credible Storm King School carbon plan.',
 };
-
-const qualityLegend = [
-  { quality: 'measured' as const, text: dataQualityDescription('measured') },
-  { quality: 'estimated' as const, text: dataQualityDescription('estimated') },
-  { quality: 'verified' as const, text: dataQualityDescription('verified') },
-  { quality: 'prototype' as const, text: dataQualityDescription('prototype') },
-];
 
 const unavailablePlan: CarbonNeutralityPlanContent = {
   definition: 'The selected carbon-plan source could not be loaded.',
@@ -48,16 +38,15 @@ const unavailablePlan: CarbonNeutralityPlanContent = {
   framework: [],
 };
 
-async function loadCarbonPageData() {
+async function loadCarbonInventoryData() {
   try {
     const provider = getCarbonProvider();
-    const [overview, history, methodology, providerMetadata] = await Promise.all([
+    const [overview, methodology, providerMetadata] = await Promise.all([
       provider.getOverview(),
-      provider.getHistory(),
       provider.getMethodology(),
       provider.getMetadata(),
     ]);
-    return { overview, history, methodology, providerMetadata };
+    return { overview, methodology, providerMetadata };
   } catch {
     const overview: CarbonOverview = {
       baselineYear: null,
@@ -79,9 +68,8 @@ async function loadCarbonPageData() {
     };
     return {
       overview,
-      history: [],
       methodology,
-      providerMetadata: unavailableMetadata('Carbon data', 'The carbon source could not be loaded. No values were inferred or replaced with mock data.'),
+      providerMetadata: unavailableMetadata('Carbon inventory', 'The carbon inventory source could not be loaded. No values were inferred or replaced with mock data.'),
     };
   }
 }
@@ -99,100 +87,146 @@ async function loadCarbonPlanData() {
   }
 }
 
+function caveatFor(planMetadata: ProviderMetadata, inventoryMetadata: ProviderMetadata): string {
+  if (planMetadata.availability === 'unavailable' || inventoryMetadata.availability === 'unavailable') {
+    return 'One or more configured sources is unavailable. No replacement result has been inferred.';
+  }
+  if (planMetadata.synthetic && inventoryMetadata.synthetic) {
+    return 'Public prototype. No Storm King School carbon inventory or reduction result is shown.';
+  }
+  return 'Plan decisions and inventory records are governed separately. Check each data-notes disclosure before reading a result.';
+}
+
+function planIntroduction(metadata: ProviderMetadata): string {
+  if (metadata.availability === 'unavailable') return 'The plan source is unavailable. No decision or result has been inferred.';
+  if (metadata.synthetic) return 'No approved public goal, baseline, target, boundary, or progress method is connected yet.';
+  return 'Approved plan decisions appear below with their publication and source status.';
+}
+
+function inventoryIntroduction(metadata: ProviderMetadata): string {
+  if (metadata.availability === 'unavailable') return 'The inventory source is unavailable. Scope values remain empty.';
+  if (metadata.synthetic) return 'These scope cards define the reporting structure only. They do not contain school results.';
+  return `${metadata.coverage.label}. Values, units, quality, and source notes remain attached to each scope.`;
+}
+
+function formatTotal(value: number | null, unit: CarbonTotals['unit']): string {
+  if (value === null) return 'Pending';
+  return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(value)} ${unit}`;
+}
+
 export default async function CarbonPage() {
-  const [carbonData, planData] = await Promise.all([loadCarbonPageData(), loadCarbonPlanData()]);
-  const { overview, history, methodology, providerMetadata } = carbonData;
+  const [inventoryData, planData] = await Promise.all([loadCarbonInventoryData(), loadCarbonPlanData()]);
+  const { overview, methodology, providerMetadata } = inventoryData;
   const { plan, metadata: planMetadata } = planData;
-  const historyUnit = history.find((point) => point.unit)?.unit ?? 'unit not supplied';
+  const canPublishTotals = overview.totals !== null
+    && !providerMetadata.synthetic
+    && providerMetadata.publicationStatus === 'reported';
 
   return (
-    <main id="main-content">
-      <section className="page-hero carbon-hero">
-        <p className="eyebrow"><span /> 03 / Carbon Neutrality Framework</p>
-        <h1 aria-label="Reduce first. Account for the rest.">Reduce first.<br /><em>Account for the rest.</em></h1>
-        <p>{plan.definition}</p>
-        <div className="page-index"><span>01</span><span>Plan & progress</span><span>02</span><span>Inventory</span><span>03</span><span>Method</span></div>
+    <main id="main-content" className="carbon-page">
+      <section className="page-hero carbon-page-hero" aria-labelledby="carbon-page-title">
+        <div className="page-hero-copy">
+          <h1 id="carbon-page-title">Decisions before percentages.</h1>
+          <p>A credible carbon plan starts with an approved goal, reporting boundary, baseline, target, and method.</p>
+        </div>
+        <p className="page-caveat" role="status">{caveatFor(planMetadata, providerMetadata)}</p>
       </section>
 
-      <PrototypeNotice metadata={planMetadata} />
+      <section className="report-section carbon-plan-section" aria-labelledby="carbon-plan-heading">
+        <header className="section-heading">
+          <div>
+            <h2 id="carbon-plan-heading">Plan decisions</h2>
+            <p>{planIntroduction(planMetadata)}</p>
+          </div>
+        </header>
 
-      <section className="section-pad carbon-plan-section" aria-labelledby="carbon-plan-heading">
-        <div className="section-intro split-intro">
-          <div><p className="eyebrow"><span /> 01 / Plan and progress</p><h2 id="carbon-plan-heading">A framework now.<br /><em>A goal after approval.</em></h2></div>
-          <p>{plan.goal ?? 'No reviewed public Storm King carbon-neutrality goal, baseline year, target year, or inventory boundary is currently connected. Those decisions must come before a progress percentage.'}</p>
-        </div>
-        <CarbonPlanProgress plan={plan} />
-        <div className="carbon-framework-grid" aria-label="Carbon neutrality framework stages">
-          {plan.framework.map((stage, index) => (
-            <article key={stage.id}>
-              <span>{String(index + 1).padStart(2, '0')}</span>
-              <h3>{stage.title}</h3>
-              <p>{stage.description}</p>
-            </article>
-          ))}
-        </div>
-      </section>
+        <CarbonPlanProgress plan={plan} available={planMetadata.availability !== 'unavailable'} />
 
-      <PrototypeNotice compact metadata={providerMetadata} />
-
-      <section className="section-pad inventory-section" aria-labelledby="inventory-heading">
-        <div className="section-intro split-intro">
-          <div><p className="eyebrow"><span /> 02 / Carbon inventory</p><h2 id="inventory-heading">Three scopes,<br /><em>one clear boundary.</em></h2></div>
-          <p>{providerMetadata.synthetic ? 'No scope total has been loaded. These cards demonstrate how future activity data, status, and source notes would be separated.' : 'Scope cards separate inventory values, units, data-quality status, and source notes.'}</p>
-        </div>
-        <CarbonScopeGrid scopes={overview.scopeBreakdown} metadata={providerMetadata} />
-        {overview.totals ? (
-          <section className="carbon-totals" aria-labelledby="carbon-totals-heading">
+        <div className="carbon-framework" aria-labelledby="carbon-framework-heading">
+          <header className="section-heading carbon-framework-heading">
             <div>
-              <span>Explicit accounting totals</span>
-              <h3 id="carbon-totals-heading">Gross, offsets, and net—without inferred arithmetic.</h3>
+              <h3 id="carbon-framework-heading">{plan.framework.length === 5 ? 'Five-stage reduction framework' : 'Reduction framework'}</h3>
+              <p>Define the rules, measure the inventory, reduce gross emissions, separate residuals, then review the public record.</p>
+            </div>
+          </header>
+          {plan.framework.length > 0 ? (
+            <ol className="carbon-framework-list">
+              {plan.framework.map((stage, index) => (
+                <li className="carbon-framework-step" key={stage.id}>
+                  <span aria-hidden="true">{index + 1}</span>
+                  <div>
+                    <h4>{stage.title}</h4>
+                    <p>{stage.description}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <div className="carbon-framework-empty" role="status">
+              <strong>Framework unavailable</strong>
+              <p>No substitute stages are shown while the configured plan source is unavailable.</p>
+            </div>
+          )}
+        </div>
+
+        {plan.retiredOffsetsTco2e !== null ? (
+          <div className="carbon-plan-evidence">
+            <h3>Credits remain a separate ledger</h3>
+            <p>{formatTotal(plan.retiredOffsetsTco2e, 'tCO2e')} retired. {plan.offsetsMethod ?? 'No method supplied.'}</p>
+            {plan.offsetsEvidenceReference ? <a href={plan.offsetsEvidenceReference}>View retirement evidence <span aria-hidden="true">↗</span></a> : <p>No public retirement evidence was supplied.</p>}
+          </div>
+        ) : null}
+
+        <DataNotes id="carbon-plan-data-notes" metadata={planMetadata} title="Plan data notes" />
+      </section>
+
+      <section className="report-section carbon-inventory-section" aria-labelledby="carbon-inventory-heading">
+        <header className="section-heading">
+          <div>
+            <h2 id="carbon-inventory-heading">Inventory by scope</h2>
+            <p>{inventoryIntroduction(providerMetadata)}</p>
+          </div>
+        </header>
+
+        <CarbonScopeGrid scopes={overview.scopeBreakdown} metadata={providerMetadata} />
+
+        {canPublishTotals && overview.totals ? (
+          <div className="carbon-totals" aria-labelledby="carbon-totals-heading">
+            <div>
+              <h3 id="carbon-totals-heading">Inventory totals</h3>
               <p>{overview.totals.calculationMethod ?? 'No offsets or net-emissions calculation method was supplied.'}</p>
             </div>
-            <dl>
-              <div><dt>Gross emissions</dt><dd>{overview.totals.grossEmissions ?? 'Not supplied'}{overview.totals.grossEmissions === null ? null : ` ${overview.totals.unit}`}</dd></div>
-              <div><dt>Offsets</dt><dd>{overview.totals.offsets ?? 'Not supplied'}{overview.totals.offsets === null ? null : ` ${overview.totals.unit}`}</dd></div>
-              <div><dt>Net emissions</dt><dd>{overview.totals.netEmissions ?? 'Not supplied'}{overview.totals.netEmissions === null ? null : ` ${overview.totals.unit}`}</dd></div>
+            <dl className="carbon-totals-list">
+              <div><dt>Gross emissions</dt><dd>{formatTotal(overview.totals.grossEmissions, overview.totals.unit)}</dd></div>
+              <div><dt>Retired offsets</dt><dd>{formatTotal(overview.totals.offsets, overview.totals.unit)}</dd></div>
+              <div><dt>Net emissions</dt><dd>{formatTotal(overview.totals.netEmissions, overview.totals.unit)}</dd></div>
             </dl>
-          </section>
-        ) : null}
-        <div className="method-grid">
-          <article><span>Reporting boundary</span><p>{methodology.reportingBoundary}</p></article>
-          <article><span>Methodology</span><p>{methodology.approach.join(' ')}</p></article>
-          <article><span>Data quality status</span><div><DataQualityBadge quality={methodology.dataQualityStatus} /><p>{providerMetadata.disclosure}</p></div></article>
-        </div>
-      </section>
-
-      <section className="carbon-trend-section section-pad" aria-labelledby="trend-heading">
-        <div className="trend-heading">
-          <div><p className="eyebrow"><span /> {providerMetadata.synthetic ? 'Synthetic pathway' : 'Reported pathway'}</p><h2 id="trend-heading">{providerMetadata.synthetic ? <>An example trend,<br /><em>not a school result.</em></> : <>Carbon history,<br /><em>with provenance.</em></>}</h2></div>
-          <p>{providerMetadata.synthetic ? 'The indexed series deliberately avoids invented tonnes of carbon. Inventory examples and future scenarios remain visibly distinct.' : 'Inventory results and scenarios remain visibly distinct, with units and data-quality language supplied by the provider.'}</p>
-        </div>
-        <div className="carbon-chart-shell">
-          <DataBarChart points={history.map((point) => ({ label: `${point.year} · ${point.kind}`, value: point.value }))} title="Carbon history and scenario" unit={historyUnit} tone="lime" isSynthetic={providerMetadata.synthetic} />
-        </div>
-      </section>
-
-      <section className="section-pad timeline-section" aria-labelledby="timeline-heading">
-        <div className="section-intro"><p className="eyebrow"><span /> Inventory timeline</p><h2 id="timeline-heading">From inventory to <em>verification.</em></h2></div>
-        <CarbonTimeline history={history} />
-      </section>
-
-      <section className="measure-section section-pad" aria-labelledby="measure-heading">
-        <div className="section-intro split-intro light-intro">
-          <div><p className="eyebrow"><span /> 03 / How we measure</p><h2 id="measure-heading">A result is only as useful as its <em>explanation.</em></h2></div>
-          <p>{providerMetadata.synthetic ? 'Before real data is connected, the school will need to approve a consistent calculation and review process.' : 'The selected provider supplies the approved calculation context and review status shown below.'}</p>
-        </div>
-        <div className="measure-grid">
-          <article><span>01</span><h3>Baseline</h3><p>{methodology.baselineDefinition}</p></article>
-          <article><span>02</span><h3>Emissions factors</h3><p>{methodology.emissionsFactors}</p></article>
-          <article><span>03</span><h3>Reporting year</h3><p>{methodology.reportingYear}</p></article>
-        </div>
-        <div className="quality-legend">
-          <div><h3>Data-quality language</h3><p>{providerMetadata.synthetic ? 'These badges are a future reporting legend. Only “Prototype” applies to content on this site today.' : `The active carbon provider reports this dataset as “${providerMetadata.status}.”`}</p></div>
-          <div className="quality-list">
-            {qualityLegend.map((item) => <article key={item.quality}><DataQualityBadge quality={item.quality} /><p>{item.text}</p></article>)}
           </div>
-        </div>
+        ) : null}
+
+        <details className="carbon-methodology">
+          <summary>Methodology and review rules</summary>
+          <div className="carbon-methodology-body">
+            <div className="carbon-methodology-status">
+              <span>Data quality</span>
+              <DataQualityBadge quality={methodology.dataQualityStatus} />
+            </div>
+            <dl className="carbon-methodology-list">
+              <div><dt>Reporting boundary</dt><dd>{methodology.reportingBoundary}</dd></div>
+              <div><dt>Baseline definition</dt><dd>{methodology.baselineDefinition}</dd></div>
+              <div><dt>Emissions factors</dt><dd>{methodology.emissionsFactors}</dd></div>
+              <div><dt>Reporting period</dt><dd>{methodology.reportingYear}</dd></div>
+            </dl>
+            <div className="carbon-methodology-approach">
+              <h3>Review approach</h3>
+              {methodology.approach.length > 0 ? (
+                <ul>{methodology.approach.map((item) => <li key={item}>{item}</li>)}</ul>
+              ) : <p>No review steps were supplied.</p>}
+            </div>
+          </div>
+        </details>
+
+        <DataNotes id="carbon-inventory-data-notes" metadata={providerMetadata} title="Inventory data notes" />
       </section>
     </main>
   );

@@ -1,6 +1,6 @@
 import type { DataQuality } from '@/lib/data-quality';
 import type { PublicationStatus } from '@/lib/provider-metadata';
-import { ValidationContext, isTimestampTooFarFuture } from '@/lib/validation/runtime';
+import { ValidationContext, isTimestampTooFarFuture, normalizePublicHttpUrl } from '@/lib/validation/runtime';
 import type { RoadmapArea, RoadmapProgress } from '@/lib/roadmap/types';
 
 const qualities = ['measured', 'estimated', 'verified', 'prototype', 'pending'] as const;
@@ -81,10 +81,9 @@ function reference(ctx: ValidationContext, value: unknown): string | null {
   const result = nullableString(ctx, value, 'source.verificationReference');
   if (result !== null) {
     try {
-      const url = new URL(result);
-      if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new Error('Unsupported protocol');
+      normalizePublicHttpUrl(result);
     } catch {
-      ctx.issues.push('source.verificationReference must be an HTTP(S) URL or null');
+      ctx.issues.push('source.verificationReference must be a public HTTP(S) URL without credentials or null');
     }
   }
   return result;
@@ -107,8 +106,10 @@ export function validateRoadmapConfigDocument(value: unknown, now = new Date()):
   const verificationReference = reference(ctx, sourceRecord.verificationReference);
   if (synthetic && publicationStatus !== 'prototype') ctx.issues.push('source.publicationStatus must be prototype when source.synthetic is true');
   if (!synthetic && publicationStatus === 'prototype') ctx.issues.push('source.publicationStatus cannot be prototype when source.synthetic is false');
+  if (!synthetic && publicationStatus !== 'reported') ctx.issues.push('non-synthetic roadmap documents must be reported before they cross the public provider boundary');
   if (synthetic && quality !== 'prototype') ctx.issues.push('source.quality must be prototype for a synthetic document');
   if (!synthetic && quality === 'prototype') ctx.issues.push('source.quality cannot be prototype for a non-synthetic document');
+  if (synthetic && verificationReference !== null) ctx.issues.push('source.verificationReference must be null for a synthetic roadmap document');
   if (quality === 'verified' && verificationReference === null) ctx.issues.push('source.verificationReference is required when source.quality is verified');
 
   const areas = ctx.array(record.areas, 'areas', { maxLength: 100 }).map((item, index) => area(ctx, item, `areas[${index}]`));
