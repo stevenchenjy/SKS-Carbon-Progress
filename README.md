@@ -1,6 +1,10 @@
-# SKS Sustainability Progress
+# Storm King Sustainability Field Report
 
-SKS Sustainability Progress is a public-facing prototype for Storm King School. Its primary information architecture is:
+**Live public prototype:** [sks-carbon-progress.stevenchenjy.chatgpt.site](https://sks-carbon-progress.stevenchenjy.chatgpt.site)
+
+Storm King Sustainability Field Report is a public-facing prototype for Storm King School. It demonstrates how student sustainability work can be documented with explicit status, source, method, and evidence boundaries. It is not an official school data publication, and school results appear only after review.
+
+Its primary information architecture is:
 
 - `/` — **Overview**: a public definition of sustainability, Storm King’s Hudson Valley setting, and alignment with Truth, Respect, Responsibility, and Scholarship.
 - `/start` — **START**: the working coordination purpose, proposed review workflow, public snapshot, and private/public boundary.

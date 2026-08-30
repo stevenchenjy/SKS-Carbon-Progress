@@ -43,15 +43,7 @@ Final measurements will be taken from fresh builds and the rendered site after t
 
 **Selected: Campus Field Report.** It keeps the atlas direction’s local type, open rules, limited palette, and low client cost while adding a recognizable Storm King/Hudson Highlands visual identity. The topographic artwork compresses to 80 KB, so the stronger place signal does not threaten the homepage budget.
 
-Concept references:
-
-- Campus Field Report desktop home: `/Users/messssi/.codex/generated_images/01a04b74-e787-79b2-a422-304356c3b505/exec-d4ac25c4-ad09-43c1-829e-da5ae275842d.png`
-- Campus Field Report desktop Projects: `/Users/messssi/.codex/generated_images/01a04b74-e787-79b2-a422-304356c3b505/exec-833ea5a0-163f-436f-802a-5072edacdf79.png`
-- Campus Field Report mobile first viewport: `/Users/messssi/.codex/generated_images/01a04b74-e787-79b2-a422-304356c3b505/exec-1bc72e98-83c2-43fa-9412-5c00b1f0960f.png`
-- Low-resource Data Atlas desktop home: `/Users/messssi/.codex/generated_images/01a04b74-e787-79b2-a422-304356c3b505/exec-d1a2bd16-31ed-4b02-b976-9bd01a2926dc.png`
-- Low-resource Data Atlas desktop Projects: `/Users/messssi/.codex/generated_images/01a04b74-e787-79b2-a422-304356c3b505/exec-1cbc8764-aaee-478e-8519-ab3497ea0cc5.png`
-- Low-resource Data Atlas mobile first viewport: `/Users/messssi/.codex/generated_images/01a04b74-e787-79b2-a422-304356c3b505/exec-b3399782-27ee-46a9-b4ef-843b3bb81914.png`
-- Production artwork: `public/images/topographic-field.webp`
+Concept references included desktop, Projects, and mobile-first-viewport renders for both directions. Those working images were generated outside the repository and are intentionally not linked from public source. The selected production artwork is committed at `public/images/topographic-field.webp`.
 
 The Low-resource Data Atlas remains a useful secondary reference for ledger alignment and resource notes, but its all-sans, all-rule treatment felt too generic for a school field report.
 
@@ -133,13 +125,7 @@ Intentional deviations:
 - `npm run providers:status` confirms all five domains are intentionally using ready synthetic/mock providers; no `.env.local` or reviewed real provider is connected.
 - `git diff --check` passes.
 
-Visual evidence is stored outside the repository:
-
-- Before, desktop Overview: `/Users/messssi/.codex/visualizations/2026/08/29/01a04b74-e787-79b2-a422-304356c3b505/sks-baseline/before-overview-viewport-1440x900.png`
-- Before, mobile Overview: `/Users/messssi/.codex/visualizations/2026/08/29/01a04b74-e787-79b2-a422-304356c3b505/sks-baseline/before-overview-viewport-390x844.png`
-- Final, desktop Overview: `/Users/messssi/.codex/visualizations/2026/08/29/01a04b74-e787-79b2-a422-304356c3b505/sks-final-post-audit-home-desktop-first-2.png`
-- Final, mobile Overview: `/Users/messssi/.codex/visualizations/2026/08/29/01a04b74-e787-79b2-a422-304356c3b505/sks-final-post-audit-home-mobile-first.png`
-- Final route captures: `sks-final-{home,start,carbon,projects,energy}-{desktop,mobile}.jpg` in the same visualization directory.
+Visual evidence was captured outside the repository for the before/final Overview states and for every final desktop and mobile route. Local filesystem paths are intentionally omitted from public source.
 
 The Browser plugin was the primary rendered-QA tool. Its page sandbox does not expose the browser Performance API, so local Playwright CLI was used only for Web Vitals and encoded-transfer measurements; this fallback reason was recorded before use.
 

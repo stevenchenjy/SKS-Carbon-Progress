@@ -12,6 +12,7 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'Projects | Storm King Sustainability Field Report',
   description: 'Read public-safe case studies for Storm King School sustainability projects, including their status and next evidence milestone.',
+  alternates: { canonical: '/projects' },
 };
 
 async function loadProjectsPageData() {

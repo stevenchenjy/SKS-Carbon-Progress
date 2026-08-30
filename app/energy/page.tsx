@@ -47,6 +47,8 @@ function formatMetric(value: number | null, unit: string): string {
 export const metadata: Metadata = {
   title: 'Energy preview | Storm King Sustainability Field Report',
   description: 'A selected-device energy preview with explicit coverage, source, freshness, and accessible time-series data.',
+  alternates: { canonical: '/energy' },
+  robots: { index: false, follow: true },
 };
 
 async function loadEnergyPageData(range: EnergyHistoryRange): Promise<{

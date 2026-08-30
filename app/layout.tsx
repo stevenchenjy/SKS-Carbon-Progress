@@ -4,22 +4,28 @@ import { SiteHeader } from '@/app/components/SiteHeader';
 import './globals.css';
 
 const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://sks-carbon-progress.stevenchenjy.chatgpt.site';
+const siteTitle = 'Storm King Sustainability Field Report';
+const siteDescription = 'Student sustainability work at Storm King School, documented with its status, source, method, and next evidence milestone.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteOrigin),
-  title: 'Storm King Sustainability Field Report',
-  description: 'Student sustainability work at Storm King School, documented with its status, source, method, and next evidence milestone.',
+  title: siteTitle,
+  description: siteDescription,
+  alternates: { canonical: '/' },
+  manifest: '/manifest.webmanifest',
   openGraph: {
-    title: 'Storm King Sustainability Field Report',
-    description: 'Student sustainability work, measured carefully and reported with context.',
+    title: siteTitle,
+    description: siteDescription,
     type: 'website',
-    images: [{ url: '/images/topographic-field.webp', width: 1584, height: 993, alt: 'Topographic lines and a river form for Storm King School' }],
+    url: '/',
+    siteName: siteTitle,
+    images: [{ url: '/og.png', width: 1200, height: 630, alt: 'Storm King Sustainability Field Report — Student work, measured carefully.' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Storm King Sustainability Field Report',
-    description: 'Student sustainability work, measured carefully and reported with context.',
-    images: ['/images/topographic-field.webp'],
+    title: siteTitle,
+    description: siteDescription,
+    images: ['/og.png'],
   },
 };
 

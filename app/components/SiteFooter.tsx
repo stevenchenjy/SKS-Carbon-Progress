@@ -16,9 +16,10 @@ export function SiteFooter() {
         <Link href="/carbon" prefetch={false}>Carbon plan</Link>
         <Link href="/projects" prefetch={false}>Projects</Link>
         <Link href="/energy" prefetch={false}>Energy preview</Link>
+        <a href="https://github.com/stevenchenjy/SKS-Carbon-Progress" rel="noreferrer" target="_blank">Project source <span aria-hidden="true">↗</span></a>
       </nav>
       <div className="footer-bottom">
-        <span>Public prototype · school results appear after review</span>
+        <span>Public prototype for school review · not an official data publication</span>
         <span>Names, emails, private notes, and approval discussions stay outside this site.</span>
       </div>
     </footer>

@@ -4,7 +4,7 @@ export default function Loading() {
       <p className="page-kicker">Loading public report</p>
       <div className="loading-line wide" /><div className="loading-line medium" />
       <div className="loading-cards"><i /><i /><i /></div>
-      <span className="sr-only">Loading climate transparency content</span>
+      <span className="sr-only">Loading sustainability field report content</span>
     </main>
   );
 }

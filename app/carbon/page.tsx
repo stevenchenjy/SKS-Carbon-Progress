@@ -14,6 +14,7 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'Carbon planning | Storm King Sustainability Field Report',
   description: 'See the decisions, inventory boundary, and reporting method required for a credible Storm King School carbon plan.',
+  alternates: { canonical: '/carbon' },
 };
 
 const unavailablePlan: CarbonNeutralityPlanContent = {

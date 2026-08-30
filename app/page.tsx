@@ -58,8 +58,14 @@ const unavailablePlan: CarbonNeutralityPlanContent = {
 function sourceName(value: string): string {
   try {
     const url = new URL(value);
+    if (url.hostname === 'sks.org' && url.pathname.includes('/at-a-glance')) {
+      return 'Storm King School — At a glance';
+    }
+    if (url.hostname === 'sks.org' && url.pathname.includes('/strategic-plan-2030')) {
+      return 'Storm King School — Strategic Plan 2030';
+    }
     if (url.hostname === 'sks.org') return 'Storm King School';
-    if (url.hostname === 'www.un.org') return 'United Nations';
+    if (url.hostname === 'www.un.org') return 'United Nations — Sustainable Development Goals';
     return url.hostname.replace(/^www\./, '');
   } catch {
     return 'Source';

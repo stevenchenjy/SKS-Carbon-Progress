@@ -44,6 +44,7 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'START Command Center | Storm King Sustainability Field Report',
   description: 'See how Storm King can move student sustainability work from an idea through evidence review to a careful public report.',
+  alternates: { canonical: '/start' },
 };
 
 const unavailableStart: StartContent = {
