@@ -5,22 +5,12 @@ import { getSiteContentProvider } from '@/lib/site-content/server';
 export async function siteContentResponse(providerFactory: () => SiteContentProvider = getSiteContentProvider) {
   return safeApiResponse(async () => {
     const provider = providerFactory();
-    const [overview, start, carbonPlan, meta] = await Promise.all([
+    const [overview, carbonPlan, meta] = await Promise.all([
       provider.getOverview(),
-      provider.getStart(),
       provider.getCarbonPlan(),
       provider.getMetadata(),
     ]);
-    const publicStart = {
-      introduction: start.introduction,
-      adoptionRationale: start.adoptionRationale,
-      adoptionStatus: start.adoptionStatus,
-      adoptionDate: start.adoptionDate,
-      workflow: start.workflow,
-      privacyBoundary: start.privacyBoundary,
-      snapshotCadence: start.snapshotCadence,
-    };
-    return { data: { overview, start: publicStart, carbonPlan }, meta };
+    return { data: { overview, carbonPlan }, meta };
   });
 }
 

@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { DataNotes } from '@/app/components/DataNotes';
-import { OverviewWorkflowList } from '@/app/components/OverviewWorkflowList';
 import { PrototypeNotice } from '@/app/components/PrototypeNotice';
 import { getProjectProvider } from '@/lib/projects/server';
 import type { PublicProject, PublicProjectMetric } from '@/lib/projects/types';
@@ -9,7 +8,6 @@ import { unavailableMetadata, type ProviderMetadata } from '@/lib/provider-metad
 import { getSiteContentProvider } from '@/lib/site-content/server';
 import type {
   CarbonNeutralityPlanContent,
-  StartContent,
   SustainabilityOverviewContent,
 } from '@/lib/site-content/types';
 
@@ -20,17 +18,6 @@ const unavailableOverview: SustainabilityOverviewContent = {
   placeContext: 'The selected public-content source could not be loaded.',
   valueAlignment: [],
   sourceReferences: [],
-};
-
-const unavailableStart: StartContent = {
-  introduction: 'The selected START source could not be loaded.',
-  adoptionRationale: null,
-  adoptionStatus: 'working-purpose',
-  owner: null,
-  adoptionDate: null,
-  workflow: [],
-  privacyBoundary: 'No private information is exposed when the source is unavailable.',
-  snapshotCadence: null,
 };
 
 const unavailablePlan: CarbonNeutralityPlanContent = {
@@ -100,21 +87,14 @@ export function projectRecordSummary(projects: PublicProject[], metadata: Provid
 
 export function workSectionSummary(projects: PublicProject[], metadata: ProviderMetadata): string {
   if (metadata.availability === 'unavailable') {
-    return 'The START workflow remains visible. The selected project source is unavailable, so no project record has been substituted.';
+    return 'The selected project source is unavailable, so no project record has been substituted.';
   }
   if (projects.length === 0) {
-    return 'The START workflow is visible. The connected project source currently contains no public-safe project records.';
+    return 'The connected project source currently contains no public-safe project records.';
   }
-  const visibleParts = Math.min(projects.length, 2) + 1;
-  const count = visibleParts === 3 ? 'Three' : visibleParts === 2 ? 'Two' : 'One';
-  return `${count} parts of the reporting system are visible now. A status is not a result; evidence appears only after review.`;
-}
-
-function startSnapshotSummary(start: StartContent, metadata: ProviderMetadata): string {
-  if (metadata.availability === 'unavailable') return 'Source unavailable';
-  return start.adoptionStatus === 'confirmed'
-    ? 'Adoption confirmed · snapshot pending'
-    : 'Working purpose · snapshot pending';
+  const visibleProjects = Math.min(projects.length, 2);
+  const count = visibleProjects === 1 ? 'One' : 'Two';
+  return `${count} public project ${visibleProjects === 1 ? 'record is' : 'records are'} visible now. A status is not a result; evidence appears only after review.`;
 }
 
 function carbonProgressSummary(plan: CarbonNeutralityPlanContent, metadata: ProviderMetadata): string {
@@ -127,17 +107,15 @@ function carbonProgressSummary(plan: CarbonNeutralityPlanContent, metadata: Prov
 async function loadSiteContent() {
   try {
     const provider = getSiteContentProvider();
-    const [overview, start, carbonPlan, metadata] = await Promise.all([
+    const [overview, carbonPlan, metadata] = await Promise.all([
       provider.getOverview(),
-      provider.getStart(),
       provider.getCarbonPlan(),
       provider.getMetadata(),
     ]);
-    return { overview, start, carbonPlan, metadata };
+    return { overview, carbonPlan, metadata };
   } catch {
     return {
       overview: unavailableOverview,
-      start: unavailableStart,
       carbonPlan: unavailablePlan,
       metadata: unavailableMetadata(
         'Sustainability content',
@@ -171,7 +149,7 @@ export default async function Home() {
     loadSiteContent(),
     loadProjectContent(),
   ]);
-  const { overview, start, carbonPlan, metadata } = siteContent;
+  const { overview, carbonPlan, metadata } = siteContent;
   const { projects, metadata: projectMetadata } = projectContent;
 
   return (
@@ -211,23 +189,9 @@ export default async function Home() {
         </header>
 
         <div className="work-list">
-          <article className="work-row">
-            <div className="work-index">01</div>
-            <div>
-              <p className="work-type">Internal committee tool</p>
-              <h3>START Committee Workflow</h3>
-            </div>
-            <p>A committee workflow for moving student ideas through ownership, evidence, review, and public release.</p>
-            <div className="work-status">
-              <span>{metadata.availability === 'unavailable' ? 'Unavailable' : start.adoptionStatus === 'confirmed' ? 'Confirmed' : 'Working purpose'}</span>
-              <strong>{metadata.availability === 'unavailable' ? 'Source not connected' : 'Public snapshot pending'}</strong>
-            </div>
-            <Link href="/start" aria-label="Read about the START Committee Workflow">Read <span aria-hidden="true">→</span></Link>
-          </article>
-
           {projects.slice(0, 2).map((project, index) => (
             <article className="work-row" key={project.id}>
-              <div className="work-index">{String(index + 2).padStart(2, '0')}</div>
+              <div className="work-index">{String(index + 1).padStart(2, '0')}</div>
               <div>
                 <p className="work-type">{project.category}</p>
                 <h3>{project.title}</h3>
@@ -247,18 +211,6 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="report-section process-section" aria-labelledby="process-heading">
-        <header className="section-heading compact-heading">
-          <h2 id="process-heading">How work becomes public</h2>
-          <p>The field report keeps action and evidence in sequence.</p>
-        </header>
-        {start.workflow.length > 0 ? (
-          <OverviewWorkflowList steps={start.workflow} />
-        ) : (
-          <div className="content-empty" role="status"><strong>Public workflow unavailable</strong><p>No replacement process has been inferred.</p></div>
-        )}
-      </section>
-
       <section className="report-section public-state-section" aria-labelledby="public-state-heading">
         <header className="section-heading compact-heading">
           <h2 id="public-state-heading">What is public now</h2>
@@ -266,7 +218,6 @@ export default async function Home() {
         </header>
         <dl className="public-state-list">
           <div><dt>Project records</dt><dd>{projectRecordSummary(projects, projectMetadata)}</dd></div>
-          <div><dt>START snapshot</dt><dd>{startSnapshotSummary(start, metadata)}</dd></div>
           <div><dt>Carbon progress</dt><dd>{carbonProgressSummary(carbonPlan, metadata)}</dd></div>
         </dl>
         <Link className="text-link" href="/projects">Read the project case studies <span aria-hidden="true">→</span></Link>

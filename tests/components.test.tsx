@@ -6,12 +6,10 @@ import { CarbonTimeline } from '@/app/components/CarbonTimeline';
 import { CarbonPlanProgress } from '@/app/components/CarbonPlanProgress';
 import { DataNotes } from '@/app/components/DataNotes';
 import { DataQualityBadge } from '@/app/components/DataQualityBadge';
-import { OverviewWorkflowList } from '@/app/components/OverviewWorkflowList';
 import { ProjectGrid } from '@/app/components/ProjectGrid';
 import { PrototypeNotice } from '@/app/components/PrototypeNotice';
 import { RoadmapGrid } from '@/app/components/RoadmapGrid';
 import { SiteHeader } from '@/app/components/SiteHeader';
-import { StartWorkflowList } from '@/app/components/StartWorkflowList';
 import { energyMetricQuality } from '@/app/energy/metric-quality';
 import type { ProviderMetadata } from '@/lib/provider-metadata';
 import type { CarbonNeutralityPlanContent } from '@/lib/site-content/types';
@@ -68,30 +66,6 @@ describe('public data components', () => {
   it('marks a missing energy metric pending without treating numeric zero as missing', () => {
     expect(energyMetricQuality(null, 'measured')).toBe('pending');
     expect(energyMetricQuality(0, 'measured')).toBe('measured');
-  });
-
-  it('uses the five-stage diagram only for five steps and a stable list for longer workflows', () => {
-    const steps = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];
-    const { container, rerender } = render(<StartWorkflowList steps={steps} />);
-    expect(screen.getAllByRole('listitem')).toHaveLength(6);
-    expect(container.querySelector('.workflow-variable-list')).not.toBeNull();
-    expect(container.querySelector('.workflow-step')).toBeNull();
-
-    rerender(<StartWorkflowList steps={steps.slice(0, 5)} />);
-    expect(container.querySelector('.workflow-list')).not.toBeNull();
-    expect(container.querySelectorAll('.workflow-step')).toHaveLength(5);
-  });
-
-  it('shows every overview workflow stage and switches longer flows to the stable layout', () => {
-    const steps = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];
-    const { container, rerender } = render(<OverviewWorkflowList steps={steps} />);
-    expect(screen.getAllByRole('listitem')).toHaveLength(6);
-    expect(screen.getByText('Six')).toBeInTheDocument();
-    expect(container.querySelector('.process-list-variable')).not.toBeNull();
-
-    rerender(<OverviewWorkflowList steps={steps.slice(0, 5)} />);
-    expect(container.querySelector('.process-list-variable')).toBeNull();
-    expect(container.querySelectorAll('.process-list > li')).toHaveLength(5);
   });
 
   it('renders a clear empty chart state', () => {

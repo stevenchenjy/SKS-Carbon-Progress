@@ -12,7 +12,6 @@ export function SiteFooter() {
       </div>
       <nav className="footer-links" aria-label="Footer navigation">
         <Link href="/" prefetch={false}>Overview</Link>
-        <Link href="/start" prefetch={false}>START</Link>
         <Link href="/carbon" prefetch={false}>Carbon plan</Link>
         <Link href="/projects" prefetch={false}>Projects</Link>
         <Link href="/energy" prefetch={false}>Energy preview</Link>

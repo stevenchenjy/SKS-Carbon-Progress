@@ -21,11 +21,8 @@ describe('public page provider isolation', () => {
     process.env.ENERGY_PROVIDER = 'revert';
     render(await Home());
     expect(screen.getByRole('heading', { name: /student work, measured carefully/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'START Committee Workflow' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'CLYNK Container Collection' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Campus Composting' })).toBeInTheDocument();
-    expect(screen.getByText('Propose a project')).toBeInTheDocument();
-    expect(screen.queryByText('Idea')).not.toBeInTheDocument();
   });
 
   it('renders an honest energy unavailable state instead of throwing or substituting mock values', async () => {
@@ -81,13 +78,10 @@ describe('public page provider isolation', () => {
     expect(projectsNoticeMessage([{ title: 'Named prototype' } as PublicProject], emptySyntheticMetadata)).toMatch(/Project names are visible/i);
   });
 
-  it('does not leak fallback START or carbon-plan states when site content is unavailable', async () => {
+  it('does not leak fallback carbon-plan states when site content is unavailable', async () => {
     process.env.SITE_CONTENT_PROVIDER = 'snapshot';
     render(await Home());
-    const startState = screen.getByText('START snapshot').closest('div');
     const carbonState = screen.getByText('Carbon progress').closest('div');
-    expect(startState).toHaveTextContent('Source unavailable');
-    expect(startState).not.toHaveTextContent('Working purpose');
     expect(carbonState).toHaveTextContent('Source unavailable');
   });
 });
