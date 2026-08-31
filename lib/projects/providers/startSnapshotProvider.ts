@@ -34,7 +34,7 @@ export class StartSnapshotProvider implements ProjectProvider {
       provider: `start-public-snapshot:${snapshot.source.id}`,
       sourceLabel: snapshot.source.label,
       disclosure: snapshot.source.synthetic
-        ? 'Validated synthetic START public snapshot. It contains no private Command Center data.'
+        ? 'Validated synthetic START public snapshot. It contains no private committee workspace data.'
         : 'Public project fields supplied by an approved, sanitized START snapshot.',
       availability: hasPendingResults ? 'partial' : 'available',
       publicationStatus: snapshot.source.publicationStatus,

@@ -42,8 +42,8 @@ const startCapabilities = [
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'START Command Center | Storm King Sustainability Field Report',
-  description: 'See how Storm King can move student sustainability work from an idea through evidence review to a careful public report.',
+  title: 'START Committee Workflow | Storm King Sustainability Field Report',
+  description: 'See how an internal committee can move student sustainability work from an idea through evidence review to a careful public report.',
   alternates: { canonical: '/start' },
 };
 
@@ -129,11 +129,11 @@ export default async function StartPage() {
     <main id="main-content" className="page-shell page-start">
       <section className="page-hero page-hero-start" aria-labelledby="start-page-title">
         <div className="page-hero-copy">
-          <p className="page-context">START Command Center</p>
+          <p className="page-context">START Committee Workflow</p>
           <h1 id="start-page-title">One workflow, from student idea to public evidence.</h1>
           <p>
-            Storm King can use a shared process to organize sustainability work, review its evidence,
-            and publish only the fields the school approves.
+            An internal committee can organize sustainability work, review its evidence,
+            and publish only the fields it approves.
           </p>
         </div>
         <dl className="page-hero-status" aria-label="START publication status">
@@ -160,14 +160,14 @@ export default async function StartPage() {
 
       <section className="report-section workflow-section" aria-labelledby="workflow-heading">
         <div className="section-heading">
-          <h2 id="workflow-heading">Command Center workflow</h2>
+          <h2 id="workflow-heading">Committee workflow</h2>
           <p>
             This public-safe preview follows the workflow supplied by the selected START content source.
             Internal notes and approval discussions stay outside the report.
           </p>
         </div>
 
-        <article className="workflow-command-center" aria-label="Public workflow preview">
+        <article className="workflow-panel" aria-label="Public workflow preview">
           <header className="workflow-header">
             <div>
               <span>Public workflow preview</span>
@@ -258,7 +258,7 @@ export default async function StartPage() {
             </ul>
           </article>
           <article className="privacy-private">
-            <h3>Kept inside the Command Center</h3>
+            <h3>Kept in the committee workspace</h3>
             <ul>
               <li>Student or staff personal information</li>
               <li>Internal notes and approval discussions</li>

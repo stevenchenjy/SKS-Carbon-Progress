@@ -214,15 +214,15 @@ export default async function Home() {
           <article className="work-row">
             <div className="work-index">01</div>
             <div>
-              <p className="work-type">Coordination system</p>
-              <h3>START Command Center</h3>
+              <p className="work-type">Internal committee tool</p>
+              <h3>START Committee Workflow</h3>
             </div>
-            <p>A shared workflow for moving student ideas through ownership, evidence, school review, and public release.</p>
+            <p>A committee workflow for moving student ideas through ownership, evidence, review, and public release.</p>
             <div className="work-status">
               <span>{metadata.availability === 'unavailable' ? 'Unavailable' : start.adoptionStatus === 'confirmed' ? 'Confirmed' : 'Working purpose'}</span>
               <strong>{metadata.availability === 'unavailable' ? 'Source not connected' : 'Public snapshot pending'}</strong>
             </div>
-            <Link href="/start" aria-label="Read about the START Command Center">Read <span aria-hidden="true">→</span></Link>
+            <Link href="/start" aria-label="Read about the START Committee Workflow">Read <span aria-hidden="true">→</span></Link>
           </article>
 
           {projects.slice(0, 2).map((project, index) => (

@@ -536,7 +536,7 @@ p, h1, h2, h3 { overflow-wrap: break-word; }
 .chart-context dd { font-size: 14px; margin: 5px 0 0; }
 .energy-reading-section { padding-bottom: 60px; padding-top: 60px; }
 
-/* START Command Center */
+/* START committee workflow */
 .page-context {
   color: var(--green-muted);
   font-size: 13px;
@@ -556,7 +556,7 @@ p, h1, h2, h3 { overflow-wrap: break-word; }
 
 .workflow-section { padding-top: 60px; }
 
-.workflow-command-center { border: 1px solid var(--line-dark); }
+.workflow-panel { border: 1px solid var(--line-dark); }
 .workflow-header { align-items: center; background: var(--green); color: var(--white); display: flex; justify-content: space-between; padding: 22px 26px; }
 .workflow-header > div { display: flex; flex-direction: column; gap: 5px; }
 .workflow-header span { color: #c5d6d0; font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }

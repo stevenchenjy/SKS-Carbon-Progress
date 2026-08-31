@@ -21,7 +21,7 @@ describe('public page provider isolation', () => {
     process.env.ENERGY_PROVIDER = 'revert';
     render(await Home());
     expect(screen.getByRole('heading', { name: /student work, measured carefully/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'START Command Center' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'START Committee Workflow' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'CLYNK Container Collection' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Campus Composting' })).toBeInTheDocument();
     expect(screen.getByText('Propose a project')).toBeInTheDocument();

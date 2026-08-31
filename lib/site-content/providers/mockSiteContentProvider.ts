@@ -44,13 +44,13 @@ const overview: SustainabilityOverviewContent = {
 };
 
 const start: StartContent = {
-  introduction: 'START—the Sustainability Tracking, Analytics & Roadmap Tool—is a whole-school sustainability platform created by the Green Schools Alliance. It helps schools organize a step-by-step roadmap, measure performance, track operational impacts, coordinate projects, and turn sustainability work into measurable progress.',
+  introduction: 'START—the Sustainability Tracking, Analytics & Roadmap Tool—is a sustainability platform created by the Green Schools Alliance. This internal committee workflow can use its roadmap, measurement, and project-coordination concepts to organize work and document progress.',
   adoptionRationale: null,
   adoptionStatus: 'working-purpose',
   owner: null,
   adoptionDate: null,
-  workflow: ['Propose a project', 'Assign ownership and a milestone', 'Record evidence and results', 'Review approved fields', 'Publish a public snapshot'],
-  privacyBoundary: 'The public site may receive reviewed summaries, statuses, metrics, dates, and evidence links. Names, emails, internal notes, concerns, blockers, and approval discussions remain inside the private Command Center.',
+  workflow: ['Propose a project', 'Assign ownership and a milestone', 'Record evidence and results', 'Review fields for approval', 'Publish a public snapshot'],
+  privacyBoundary: 'The public site may receive reviewed summaries, statuses, metrics, dates, and evidence links. Names, emails, internal notes, concerns, blockers, and approval discussions remain in the private committee workspace.',
   snapshotCadence: null,
 };
 
