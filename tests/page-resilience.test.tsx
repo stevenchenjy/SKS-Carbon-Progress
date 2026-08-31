@@ -23,7 +23,7 @@ describe('public page provider isolation', () => {
     expect(screen.getByRole('heading', { name: /student work, measured carefully/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'CLYNK Container Collection' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Campus Composting' })).toBeInTheDocument();
-    expect(screen.queryByText(/\bSTART\b/)).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /explore START progress/i })).toHaveAttribute('href', '/start');
   });
 
   it('renders an honest energy unavailable state instead of throwing or substituting mock values', async () => {

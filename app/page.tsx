@@ -223,6 +223,24 @@ export default async function Home() {
         <Link className="text-link" href="/projects">Read the project case studies <span aria-hidden="true">→</span></Link>
       </section>
 
+      <section className="report-section start-preview-section" aria-labelledby="start-preview-heading">
+        <header className="section-heading">
+          <div>
+            <p className="page-kicker">Green Schools Alliance</p>
+            <h2 id="start-preview-heading">START &amp; Green Schools Alliance</h2>
+          </div>
+          <p>Storm King’s student-led START work brings an international school community, a shared assessment framework, and hands-on campus projects together.</p>
+        </header>
+        <div className="start-preview-content">
+          <dl className="start-preview-facts">
+            <div><dt>START points</dt><dd>343 <span>/ 963</span></dd></div>
+            <div><dt>Current rating</dt><dd>Two Stars</dd></div>
+            <div><dt>Metrics complete</dt><dd>31 <span>/ 53</span></dd></div>
+          </dl>
+          <Link className="start-project-link" href="/start">Explore START progress <span aria-hidden="true">→</span></Link>
+        </div>
+      </section>
+
       <section className="report-section place-section" aria-labelledby="place-heading">
         <div>
           <h2 id="place-heading">Why this place matters</h2>
