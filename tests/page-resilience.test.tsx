@@ -1,10 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import Home, { projectRecordSummary, workSectionSummary } from '@/app/page';
+import Home, { getCampusCarbonImpact } from '@/app/page';
 import EnergyPage from '@/app/energy/page';
 import ProjectsPage, { projectsHeroDescription, projectsNoticeMessage } from '@/app/projects/page';
-import { unavailableMetadata, type ProviderMetadata } from '@/lib/provider-metadata';
+import type { ProviderMetadata } from '@/lib/provider-metadata';
 import type { PublicProject } from '@/lib/projects/types';
+import type { CarbonNeutralityPlanContent } from '@/lib/site-content/types';
 
 afterEach(() => {
   delete process.env.ENERGY_PROVIDER;
@@ -20,10 +21,24 @@ describe('public page provider isolation', () => {
   it('keeps the field-report overview available when the secondary energy provider is misconfigured', async () => {
     process.env.ENERGY_PROVIDER = 'revert';
     render(await Home());
-    expect(screen.getByRole('heading', { name: /student work, measured carefully/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'CLYNK Container Collection' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Campus Composting' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /explore START progress/i })).toHaveAttribute('href', '/start');
+    expect(screen.getByRole('heading', { name: /a public record of sustainability progress/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /why this place matters/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /campus impact, in one measure/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /two frameworks, two jobs/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /understand the START framework/i })).toHaveAttribute('href', '/start');
+    expect(screen.getByRole('link', { name: /understand the carbon framework/i })).toHaveAttribute('href', '/carbon');
+    expect(screen.queryByRole('heading', { name: 'CLYNK Container Collection' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Campus Composting' })).not.toBeInTheDocument();
+  });
+
+  it('orders place, campus impact, and frameworks before any report notes', async () => {
+    render(await Home());
+    const sectionHeadings = screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent);
+    expect(sectionHeadings.slice(0, 3)).toEqual([
+      'Why this place matters',
+      'Campus impact, in one measure',
+      'Two frameworks, two jobs',
+    ]);
   });
 
   it('renders an honest energy unavailable state instead of throwing or substituting mock values', async () => {
@@ -68,10 +83,6 @@ describe('public page provider isolation', () => {
       coverage: { kind: 'public-subset', label: 'Empty public subset', note: 'No records.', monitoredDeviceCount: null },
       reportingPeriod: null,
     };
-    expect(projectRecordSummary([], availableMetadata)).toBe('No public records');
-    expect(projectRecordSummary([], unavailableMetadata('Projects', 'Unavailable.'))).toBe('Source unavailable');
-    expect(workSectionSummary([], availableMetadata)).toMatch(/currently contains no public-safe project records/i);
-    expect(workSectionSummary([], unavailableMetadata('Projects', 'Unavailable.'))).toMatch(/source is unavailable/i);
     expect(projectsHeroDescription([], availableMetadata)).toMatch(/currently contains no public project records/i);
     const emptySyntheticMetadata = { ...availableMetadata, synthetic: true };
     expect(projectsHeroDescription([], emptySyntheticMetadata)).toMatch(/no named public project records/i);
@@ -82,7 +93,56 @@ describe('public page provider isolation', () => {
   it('does not leak fallback carbon-plan states when site content is unavailable', async () => {
     process.env.SITE_CONTENT_PROVIDER = 'snapshot';
     render(await Home());
-    const carbonState = screen.getByText('Carbon progress').closest('div');
-    expect(carbonState).toHaveTextContent('Source unavailable');
+    expect(screen.getByRole('status')).toHaveTextContent('Source unavailable');
+  });
+
+  it('publishes an absolute campus reduction only with an approved comparable result', () => {
+    const plan: CarbonNeutralityPlanContent = {
+      definition: 'Test definition.',
+      goal: 'Reduce gross emissions.',
+      targetYear: 2030,
+      baselineYear: 2024,
+      latestReportingYear: 2026,
+      inventoryBoundary: 'Scope 1 and market-based Scope 2 campus operations.',
+      baselineGrossEmissionsTco2e: 100,
+      latestGrossEmissionsTco2e: 70,
+      targetGrossEmissionsTco2e: 40,
+      progressPercent: 50,
+      progressMetric: 'Target attainment',
+      progressMethod: 'Comparable gross inventories.',
+      retiredOffsetsTco2e: null,
+      offsetsMethod: null,
+      offsetsEvidenceReference: null,
+      status: 'Plan active',
+      updatedAt: '2026-08-31',
+      quality: 'measured',
+      framework: [],
+    };
+    const metadata: ProviderMetadata = {
+      synthetic: false,
+      status: 'measured',
+      provider: 'test-site-content',
+      sourceLabel: 'Reviewed test source',
+      disclosure: 'Test only.',
+      availability: 'available',
+      publicationStatus: 'reported',
+      freshness: { state: 'not-applicable', observedAt: null, staleAfterMinutes: null },
+      coverage: { kind: 'inventory-boundary', label: 'Test boundary', note: 'Test only.', monitoredDeviceCount: null },
+      reportingPeriod: null,
+    };
+
+    expect(getCampusCarbonImpact(plan, metadata)).toMatchObject({
+      status: 'reported',
+      label: 'Gross emissions reduced',
+      value: '30',
+      unit: 'tCO₂e',
+      baseline: '100 tCO₂e · 2024',
+      latestInventory: '70 tCO₂e · 2026',
+    });
+
+    expect(getCampusCarbonImpact({ ...plan, progressPercent: null }, metadata)).toMatchObject({
+      status: 'pending',
+      value: 'Awaiting approved inventory',
+    });
   });
 });

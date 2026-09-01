@@ -6,7 +6,7 @@ Storm King Sustainability Field Report is a public-facing prototype for Storm Ki
 
 Its primary information architecture is:
 
-- `/` — **Overview**: a public definition of sustainability, Storm King’s Hudson Valley setting, and alignment with Truth, Respect, Responsibility, and Scholarship.
+- `/` — **Overview**: a definition of the report, Storm King’s Hudson Valley setting, an evidence-gated campus carbon-impact measure, and an introduction to the distinct roles of START and the Carbon Neutrality Plan. Individual projects stay on `/projects`.
 - `/start` — **START**: the working coordination purpose, proposed review workflow, public snapshot, and private/public boundary.
 - `/carbon` — **Carbon Neutrality Plan**: the proposed framework, an evidence-gated target-attainment result, carbon inventory structure, and methodology.
 - `/projects` — **Projects**: CLYNK and composting project structures with nullable, source-aware public metrics.

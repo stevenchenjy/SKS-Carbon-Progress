@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'Storm King Sustainability Field Report',
     short_name: 'SKS Field Report',
-    description: 'Student sustainability work documented with clear status, source, method, and evidence boundaries.',
+    description: 'A public record connecting whole-school sustainability benchmarks, campus greenhouse-gas accounting, and reviewed evidence.',
     start_url: '/',
     display: 'standalone',
     background_color: '#faf9f5',

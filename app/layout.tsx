@@ -5,7 +5,7 @@ import './globals.css';
 
 const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://sks-carbon-progress.stevenchenjy.chatgpt.site';
 const siteTitle = 'Storm King Sustainability Field Report';
-const siteDescription = 'Student sustainability work at Storm King School, documented with its status, source, method, and next evidence milestone.';
+const siteDescription = 'A public record connecting whole-school sustainability benchmarks, campus greenhouse-gas accounting, and reviewed evidence at Storm King School.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteOrigin),
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     type: 'website',
     url: '/',
     siteName: siteTitle,
-    images: [{ url: '/og.png', width: 1200, height: 630, alt: 'Storm King Sustainability Field Report — Student work, measured carefully.' }],
+    images: [{ url: '/og.png', width: 1200, height: 630, alt: 'Storm King Sustainability Field Report' }],
   },
   twitter: {
     card: 'summary_large_image',
