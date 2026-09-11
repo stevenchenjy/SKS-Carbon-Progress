@@ -106,7 +106,7 @@ export default async function EnergyPage({ searchParams }: EnergyPageProps = {})
   const historyUnit = range === '24h' ? 'kW' : 'kWh';
 
   return (
-    <main id="main-content">
+    <main tabIndex={-1} id="main-content">
       <section className="page-hero energy-hero">
         <div>
           <h1>A monitored signal, not a campus total.</h1>
@@ -162,10 +162,10 @@ export default async function EnergyPage({ searchParams }: EnergyPageProps = {})
       <section className="report-section energy-chart-section" aria-labelledby="energy-chart-heading">
         <header className="section-heading compact-heading">
           <h2 id="energy-chart-heading">Monitored usage over time</h2>
-          <div className="range-control" aria-label="Energy chart time range">
+          <nav className="range-control" aria-label="Energy chart time range">
             <Link aria-current={range === '24h' ? 'page' : undefined} href="/energy?range=24h" scroll={false}>24 hours</Link>
             <Link aria-current={range === '7d' ? 'page' : undefined} href="/energy?range=7d" scroll={false}>7 days</Link>
-          </div>
+          </nav>
         </header>
 
         <div className="chart-shell">

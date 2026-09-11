@@ -39,7 +39,19 @@ body {
 a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: .2em; }
 button, input, select, textarea { font: inherit; }
 img { display: block; max-width: 100%; }
-p, h1, h2, h3 { overflow-wrap: break-word; }
+p, h1, h2, h3, h4, dt, dd, a { overflow-wrap: anywhere; }
+
+/* Let provider text wrap inside grid and flex tracks without widening the page. */
+main :where(section, article, header, div, dl, dt, dd, p, h2, h3, h4) { min-width: 0; }
+a, button, summary { touch-action: manipulation; }
+a:hover { text-decoration-line: underline; }
+summary:hover { color: var(--green); text-decoration: underline; text-underline-offset: .2em; }
+.desktop-nav a:hover { border-bottom-color: var(--green); }
+.range-control a:hover { text-decoration: underline; }
+.error-page button:hover { background: #0f3c2d; }
+.error-page button { cursor: pointer; }
+main [id] { scroll-margin-top: 24px; }
+dd, .case-metric, .energy-metric-list, .start-score-summary, .start-category p { font-variant-numeric: tabular-nums; }
 
 .skip-link {
   background: var(--green);
@@ -607,6 +619,13 @@ p, h1, h2, h3 { overflow-wrap: break-word; }
 .chart-empty { border: 1px solid var(--line); margin-top: 22px; padding: 30px; }
 .chart-empty strong { font-family: var(--serif); font-size: 24px; font-weight: 400; }
 .chart-empty p { color: var(--green-muted); font-size: 16px; margin: 7px 0 0; }
+.chart-data { border-top: 1px solid var(--line); margin-top: 20px; }
+.chart-data summary { color: var(--green); cursor: pointer; font-size: 14px; font-weight: 700; padding: 14px 0; }
+.chart-data table { border-collapse: collapse; font-size: 14px; table-layout: fixed; width: 100%; }
+.chart-data caption { color: var(--green-muted); padding-bottom: 12px; text-align: left; }
+.chart-data th, .chart-data td { border-bottom: 1px solid var(--line); overflow-wrap: anywhere; padding: 8px; text-align: left; }
+.chart-data td { font-variant-numeric: tabular-nums; }
+.progress-track { accent-color: var(--green); display: block; max-width: 100%; width: 100%; }
 .chart-context { display: grid; grid-template-columns: repeat(3, 1fr); margin: 20px 0 0; }
 .chart-context div { border-left: 1px solid var(--line); padding: 3px 18px; }
 .chart-context dt { color: var(--green-muted); font-size: 13px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
@@ -890,6 +909,8 @@ p, h1, h2, h3 { overflow-wrap: break-word; }
   .energy-metric-list { grid-template-columns: 1fr; }
   .energy-metric-list article, .energy-metric-list article + article { border-left: 0; padding-left: 0; padding-right: 0; }
   .range-control { justify-self: start; }
+  .chart-title, .scope-heading, .decision-status, .carbon-methodology-status,
+  .metric-note header, .energy-metric-list article > div, .decision-progress-result p { flex-wrap: wrap; gap: 12px; }
   .chart-shell { padding: 20px 14px 14px; }
   .chart-title { gap: 12px; }
   .chart-plot { gap: 2px; height: 220px; }

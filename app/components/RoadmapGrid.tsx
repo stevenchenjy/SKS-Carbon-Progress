@@ -21,9 +21,9 @@ export function RoadmapGrid({ areas, metadata }: { areas: RoadmapArea[]; metadat
             <span>{metadata.synthetic ? 'Example stage' : 'Current stage'}</span><strong>{area.progress.stage}</strong>
             {area.progress.percent !== null && area.progress.metricLabel ? (
               <>
-                <div className="progress-track" aria-label={`${area.progress.percent} percent progress against ${area.progress.metricLabel}`}>
-                  <i style={{ width: `${area.progress.percent}%` }} />
-                </div>
+                <progress className="progress-track" value={area.progress.percent} max={100} aria-label={area.progress.metricLabel}>
+                  {area.progress.percent}%
+                </progress>
                 <small>{area.progress.metricLabel}</small>
               </>
             ) : <small>Qualitative stage · no percentage assigned</small>}

@@ -24,7 +24,7 @@ function Arrow() {
 
 export default function StartPage() {
   return (
-    <main className="start-page" id="main-content">
+    <main tabIndex={-1} className="start-page" id="main-content">
       <section className="start-hero" aria-labelledby="start-page-title">
         <div className="start-hero-copy">
           <p className="page-kicker">Green Schools Alliance</p>

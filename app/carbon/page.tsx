@@ -124,7 +124,7 @@ export default async function CarbonPage() {
     && providerMetadata.publicationStatus === 'reported';
 
   return (
-    <main id="main-content" className="carbon-page">
+    <main tabIndex={-1} id="main-content" className="carbon-page">
       <section className="page-hero carbon-page-hero" aria-labelledby="carbon-page-title">
         <div className="page-hero-copy">
           <h1 id="carbon-page-title">Decisions before percentages.</h1>

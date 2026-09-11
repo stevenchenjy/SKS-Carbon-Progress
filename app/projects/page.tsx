@@ -60,7 +60,7 @@ export default async function ProjectsPage() {
   const { projects, providerMetadata } = await loadProjectsPageData();
 
   return (
-    <main id="main-content">
+    <main tabIndex={-1} id="main-content">
       <section className="page-hero projects-hero">
         <div>
           <h1>Projects underway on campus.</h1>

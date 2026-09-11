@@ -158,7 +158,7 @@ export default async function Home() {
   const impact = getCampusCarbonImpact(carbonPlan, metadata);
 
   return (
-    <main id="main-content">
+    <main tabIndex={-1} id="main-content">
       <section className="field-hero">
         <div className="field-hero-copy">
           <h1>A public record of sustainability progress.</h1>
@@ -174,6 +174,7 @@ export default async function Home() {
             alt=""
             height="993"
             fetchPriority="high"
+            loading="eager"
             sizes="(max-width: 760px) 100vw, 54vw"
             src="/images/topographic-field.webp"
             width="1584"

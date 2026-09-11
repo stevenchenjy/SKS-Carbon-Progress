@@ -31,7 +31,7 @@ export function DataBarChart({ points, title, unit, sparseLabels = false, tone =
 
   return (
     <figure className={`bar-chart chart-${tone}`} aria-label={`${title}. ${provenanceLabel} in ${unit}.`}>
-      <div className="chart-plot">
+      <div className="chart-plot" aria-hidden="true">
         {points.map((point, index) => {
           const isMissing = point.value === null || !Number.isFinite(point.value);
           const isZero = !isMissing && point.value === 0;
@@ -49,19 +49,22 @@ export function DataBarChart({ points, title, unit, sparseLabels = false, tone =
           );
         })}
       </div>
+      <details className="chart-data">
+        <summary>View chart values</summary>
+        <table>
+          <caption>{title} {isSynthetic ? 'synthetic' : 'provider-supplied'} values</caption>
+          <thead><tr><th scope="col">Period</th><th scope="col">Value ({unit})</th></tr></thead>
+          <tbody>
+            {points.map((point, index) => (
+              <tr key={`${point.label}-row-${index}`}><th scope="row">{point.label}</th><td>{point.value === null || !Number.isFinite(point.value) ? 'Missing' : `${point.value.toLocaleString('en-US', { maximumFractionDigits: 20 })} ${unit}`}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </details>
       <figcaption>
         <span>{isSynthetic ? 'Simulated' : 'Reported'} series · {unit}</span>
         <span>Scale 0–{maximum.toLocaleString('en-US')} {unit} · missing values are hatched</span>
       </figcaption>
-      <table className="sr-only">
-        <caption>{title} {isSynthetic ? 'synthetic' : 'provider-supplied'} values</caption>
-        <thead><tr><th>Period</th><th>Value</th></tr></thead>
-        <tbody>
-          {points.map((point, index) => (
-            <tr key={`${point.label}-row-${index}`}><th>{point.label}</th><td>{point.value === null || !Number.isFinite(point.value) ? 'Missing' : `${point.value} ${unit}`}</td></tr>
-          ))}
-        </tbody>
-      </table>
     </figure>
   );
 }
